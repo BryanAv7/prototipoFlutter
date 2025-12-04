@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'EditProfileScreen.dart';
+import 'package:motos_app/screens/ViewProfileScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Ítem "Perfil": me lleva a EditProfileScreen---
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+        MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
       );
     } else {
       setState(() {
