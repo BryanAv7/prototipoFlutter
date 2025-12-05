@@ -23,6 +23,8 @@ dependencies:
   # Permite abrir la cámara o galería para seleccionar o tomar fotos
   image_picker: ^1.1.2
 
+  shared_preferences: ^2.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

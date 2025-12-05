@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:motos_app/screens/ViewProfileScreen.dart';
+import '../services/auth_service.dart';
+import '../utils/token_manager.dart';
+import 'dart:convert';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,18 +13,69 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  String nombreUsuario = "";
 
-  // Lista de acciones para cada ítem
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  // ========================================================
+  // Cargar nombre del usuario desde SharedPreferences
+  // ========================================================
+  Future<void> _loadUserName() async {
+    // leer el JSON del usuario guardado
+    final userMap = await TokenManager.getUserJson();
+
+    if (userMap != null) {
+      setState(() {
+        // BACKEND → nombre_usuario
+        nombreUsuario = userMap["nombre_usuario"] ??
+            userMap["nombreUsuario"] ??
+            userMap["nombre_completo"] ??
+            "Usuario";
+      });
+      return;
+    }
+
+    // Fallback → intentar extraer del token si algo falla
+    final token = await TokenManager.getToken();
+    if (token == null) return;
+
+    final parts = token.split(".");
+    if (parts.length != 3) return;
+
+    try {
+      final payload =
+      utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final data = jsonDecode(payload);
+
+      setState(() {
+        nombreUsuario = data["nombre_usuario"] ??
+            data["nombreUsuario"] ??
+            data["sub"] ??
+            "Usuario";
+      });
+    } catch (e) {
+      setState(() => nombreUsuario = "Usuario");
+    }
+  }
+
+  // Pantallas del bottom navigation
   final List<Widget Function(BuildContext)> _screens = [
-        (context) => const Center(child: Text('Inicio', style: TextStyle(color: Colors.white))),
-        (context) => const Center(child: Text('Mapa', style: TextStyle(color: Colors.white))),
-        (context) => const Center(child: Text('Buscar', style: TextStyle(color: Colors.white))),
-        (context) => const Center(child: Text('Notificaciones', style: TextStyle(color: Colors.white))),
+        (context) =>
+    const Center(child: Text('Inicio', style: TextStyle(color: Colors.white))),
+        (context) =>
+    const Center(child: Text('Mapa', style: TextStyle(color: Colors.white))),
+        (context) =>
+    const Center(child: Text('Buscar', style: TextStyle(color: Colors.white))),
+        (context) => const Center(
+        child: Text('Notificaciones', style: TextStyle(color: Colors.white))),
   ];
 
   void _onItemTapped(int index) {
     if (index == 4) {
-      // Ítem "Perfil": me lleva a EditProfileScreen---
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
@@ -37,13 +91,33 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black87,
+
+      // ------------------------------------------------
+      // APPBAR
+      // ------------------------------------------------
       appBar: AppBar(
         backgroundColor: Colors.yellow[700],
-        title: const Text(
-          '¡Bienvenido a Gorila Motors!',
-          style: TextStyle(color: Colors.black),
+        title: Text(
+          '¡Bienvenido, $nombreUsuario!',
+          style: const TextStyle(color: Colors.black),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black),
+            tooltip: "Cerrar sesión",
+            onPressed: () async {
+              await AuthService.logout();
+              if (!context.mounted) return;
+
+              Navigator.pushReplacementNamed(context, "/login");
+            },
+          ),
+        ],
       ),
+
+      // ------------------------------------------------
+      // BODY
+      // ------------------------------------------------
       body: _selectedIndex < 4
           ? Padding(
         padding: const EdgeInsets.all(20.0),
@@ -52,15 +126,28 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisSpacing: 20,
           mainAxisSpacing: 20,
           children: [
-            _DashboardCard(icon: Icons.list_alt, label: 'Órdenes', onTap: () {}),
-            _DashboardCard(icon: Icons.inventory, label: 'Inventario', onTap: () {}),
-            _DashboardCard(icon: Icons.notifications, label: 'Reservas', onTap: () {}),
-            _DashboardCard(icon: Icons.motorcycle, label: 'Mantenimientos', onTap: () {}),
-            _DashboardCard(icon: Icons.person, label: 'Usuarios', onTap: () {}),
+            _DashboardCard(
+                icon: Icons.list_alt, label: 'Órdenes', onTap: () {}),
+            _DashboardCard(
+                icon: Icons.inventory, label: 'Inventario', onTap: () {}),
+            _DashboardCard(
+                icon: Icons.notifications,
+                label: 'Reservas',
+                onTap: () {}),
+            _DashboardCard(
+                icon: Icons.motorcycle,
+                label: 'Mantenimientos',
+                onTap: () {}),
+            _DashboardCard(
+                icon: Icons.person, label: 'Usuarios', onTap: () {}),
           ],
         ),
       )
           : const SizedBox(),
+
+      // ------------------------------------------------
+      // BOTTOM NAVIGATION BAR
+      // ------------------------------------------------
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         backgroundColor: Colors.yellow[700],
@@ -80,7 +167,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// Widget de tarjeta
+// --------------------------------------------------------
+// TARJETAS DEL DASHBOARD
+// --------------------------------------------------------
 class _DashboardCard extends StatelessWidget {
   final IconData icon;
   final String label;

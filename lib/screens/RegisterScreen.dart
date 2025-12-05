@@ -1,7 +1,70 @@
 import 'package:flutter/material.dart';
+import '../services/register_service.dart';
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  // Controladores de texto
+  final TextEditingController nombreCompletoCtrl = TextEditingController();
+  final TextEditingController nombreUsuarioCtrl = TextEditingController();
+  final TextEditingController correoCtrl = TextEditingController();
+  final TextEditingController contrasenaCtrl = TextEditingController();
+
+  // Para mostrar/ocultar contraseña
+  bool _obscurePassword = true;
+
+  // Para evitar múltiples envíos
+  bool _isLoading = false;
+
+  // Función para registrarse
+  Future<void> _registrarUsuario() async {
+    if (_isLoading) return;
+
+    if (nombreCompletoCtrl.text.isEmpty ||
+        nombreUsuarioCtrl.text.isEmpty ||
+        correoCtrl.text.isEmpty ||
+        contrasenaCtrl.text.isEmpty) {
+      _showSnack("Completa todos los campos");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final success = await RegisterService.registerUser(
+      nombreCompleto: nombreCompletoCtrl.text.trim(),
+      nombreUsuario: nombreUsuarioCtrl.text.trim(),
+      correo: correoCtrl.text.trim(),
+      contrasena: contrasenaCtrl.text.trim(),
+    );
+
+    setState(() => _isLoading = false);
+
+    if (success) {
+      _showSnack("¡Felicidades, Bienvenido a la Familia!");
+
+      // Espera un momento y regresa al login
+      Future.delayed(const Duration(milliseconds: 800), () {
+        Navigator.pop(context);
+      });
+    } else {
+      _showSnack("Error al registrar usuario");
+    }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.yellow[700],
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,95 +99,123 @@ class RegisterScreen extends StatelessWidget {
 
                         // Icono moto
                         Center(
-                          child: Icon(Icons.motorcycle, color: Colors.grey[400], size: 100),
+                          child: Icon(Icons.motorcycle,
+                              color: Colors.grey[400], size: 100),
                         ),
 
                         const SizedBox(height: 10),
 
                         // Título
-                        const Center(
-                          child: Text(
-                            'Registro de Usuario',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        const Text(
+                          'Registro de Usuario',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
 
                         const SizedBox(height: 20),
 
-                        // Contenido scrollable
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                // Campos
-                                _buildTextField('Nombre Completo'),
-                                const SizedBox(height: 15),
-                                _buildTextField('Nombre Usuario'),
-                                const SizedBox(height: 15),
-                                _buildTextField(
-                                  'Correo Electrónico',
-                                  suffixIcon: const Icon(Icons.check_circle, color: Colors.green),
-                                ),
-                                const SizedBox(height: 15),
-                                _buildTextField('Contraseña', obscureText: true),
+                        // Campos
+                        _buildField(nombreCompletoCtrl, "Nombre Completo"),
+                        const SizedBox(height: 15),
 
-                                const SizedBox(height: 25),
+                        _buildField(nombreUsuarioCtrl, "Nombre Usuario"),
+                        const SizedBox(height: 15),
 
-                                // Botón Registrar
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () {},
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.yellow[700],
-                                      padding: const EdgeInsets.symmetric(vertical: 15),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      'REGISTRARSE',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                        _buildField(
+                          correoCtrl,
+                          "Correo Electrónico",
+                          suffix: const Icon(Icons.check_circle, color: Colors.green),
+                        ),
+                        const SizedBox(height: 15),
 
-                                const SizedBox(height: 15),
-
-                                // Texto: ¿Ya tienes una cuenta? Iniciar Sesión
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      '¿Ya tienes una cuenta? ',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text(
-                                        'Iniciar Sesión',
-                                        style: TextStyle(
-                                          color: Colors.yellow,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 20),
-                              ],
+                        // CONTRASEÑA
+                        TextField(
+                          controller: contrasenaCtrl,
+                          obscureText: _obscurePassword,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Contraseña',
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            filled: true,
+                            fillColor: Colors.grey[850],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.yellow),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.yellow),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.grey[400],
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
                             ),
                           ),
                         ),
+
+                        const SizedBox(height: 25),
+
+                        // Botón Registrar
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _registrarUsuario,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.yellow[700],
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(color: Colors.black)
+                                : const Text(
+                              'REGISTRARSE',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        // Texto: ¿Ya tienes una cuenta?
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              '¿Ya tienes una cuenta? ',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                'Iniciar Sesión',
+                                style: TextStyle(
+                                  color: Colors.yellow,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -137,24 +228,25 @@ class RegisterScreen extends StatelessWidget {
     );
   }
 
-  // Función para crear TextFields
-  Widget _buildTextField(String hintText, {bool obscureText = false, Widget? suffixIcon}) {
+  // Reutilizable
+  Widget _buildField(TextEditingController ctrl, String hint,
+      {Widget? suffix}) {
     return TextField(
-      obscureText: obscureText,
+      controller: ctrl,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        hintText: hintText,
+        hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey),
         filled: true,
         fillColor: Colors.grey[850],
-        suffixIcon: suffixIcon,
+        suffixIcon: suffix,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.yellow),
+          borderSide: const BorderSide(color: Colors.yellow),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.yellow),
+          borderSide: const BorderSide(color: Colors.yellow),
         ),
       ),
     );

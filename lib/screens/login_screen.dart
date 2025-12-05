@@ -1,9 +1,68 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import 'HomeScreen.dart';
 import 'RegisterScreen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController correoController = TextEditingController();
+  final TextEditingController contrasenaController = TextEditingController();
+
+  bool _loading = false;
+
+  // Control para mostrar/ocultar contraseña
+  bool _obscurePassword = true;
+
+  Future<void> _login() async {
+    final correo = correoController.text.trim();
+    final contrasena = contrasenaController.text.trim();
+
+    if (correo.isEmpty || contrasena.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Completa todos los campos"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    final response = await AuthService.login(correo, contrasena);
+
+    setState(() => _loading = false);
+
+    if (response == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Correo o contraseña incorrectos"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Token ya se guardó en AuthService
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("¡Bienvenido, ${response.usuario.nombreUsuario}!"),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // Navegar al Home
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +84,8 @@ class LoginScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       children: [
-                        const Spacer(), // Espacio flexible arriba
+                        const Spacer(),
 
-                        // Icono moto
                         Center(
                           child: Icon(
                             Icons.motorcycle,
@@ -38,7 +96,6 @@ class LoginScreen extends StatelessWidget {
 
                         const SizedBox(height: 20),
 
-                        // Texto Login
                         const Text(
                           'Login',
                           style: TextStyle(
@@ -50,8 +107,9 @@ class LoginScreen extends StatelessWidget {
 
                         const SizedBox(height: 20),
 
-                        // Campo correo
+                        // CAMPO CORREO
                         TextField(
+                          controller: correoController,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             hintText: 'Correo',
@@ -60,20 +118,21 @@ class LoginScreen extends StatelessWidget {
                             fillColor: Colors.grey[850],
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.yellow),
+                              borderSide: const BorderSide(color: Colors.yellow),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.yellow),
+                              borderSide: const BorderSide(color: Colors.yellow),
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 15),
 
-                        // Campo contraseña
+                        // CAMPO CONTRASEÑA
                         TextField(
-                          obscureText: true,
+                          controller: contrasenaController,
+                          obscureText: _obscurePassword,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             hintText: 'Contraseña',
@@ -82,18 +141,32 @@ class LoginScreen extends StatelessWidget {
                             fillColor: Colors.grey[850],
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.yellow),
+                              borderSide: const BorderSide(color: Colors.yellow),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.yellow),
+                              borderSide: const BorderSide(color: Colors.yellow),
+                            ),
+
+                            // Botón para mostrar/ocultar
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.grey[400],
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 10),
 
-                        // Olvidaste contraseña
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
@@ -107,36 +180,33 @@ class LoginScreen extends StatelessWidget {
 
                         const SizedBox(height: 15),
 
-                        // Botón Iniciar Sesión
+                        // BOTÓN LOGIN
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => const HomeScreen()),
-                              );
-                            },
+                            onPressed: _loading ? null : _login,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.yellow[700],
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 15),
+                              padding: const EdgeInsets.symmetric(vertical: 15),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
+                            child: _loading
+                                ? const CircularProgressIndicator(
+                              color: Colors.black,
+                            )
+                                : const Text(
                               'Iniciar Sesión',
-                              style:
-                              TextStyle(color: Colors.black, fontSize: 16),
+                              style: TextStyle(
+                                  color: Colors.black, fontSize: 16),
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 10),
 
-                        // Botón Registrarse
+                        // BOTÓN REGISTRO
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -144,29 +214,27 @@ class LoginScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                    const RegisterScreen()),
+                                  builder: (context) => const RegisterScreen(),
+                                ),
                               );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.yellow[700],
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 15),
+                              padding: const EdgeInsets.symmetric(vertical: 15),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
                               'Registrarse',
-                              style:
-                              TextStyle(color: Colors.black, fontSize: 16),
+                              style: TextStyle(
+                                  color: Colors.black, fontSize: 16),
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 20),
 
-                        // Texto O continúa con:
                         const Text(
                           'O continúa con:',
                           style: TextStyle(color: Colors.white),
@@ -174,7 +242,6 @@ class LoginScreen extends StatelessWidget {
 
                         const SizedBox(height: 10),
 
-                        // Botón Google
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -190,8 +257,7 @@ class LoginScreen extends StatelessWidget {
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -199,7 +265,7 @@ class LoginScreen extends StatelessWidget {
                           ),
                         ),
 
-                        const Spacer(), // Espacio flexible abajo
+                        const Spacer(),
                       ],
                     ),
                   ),
