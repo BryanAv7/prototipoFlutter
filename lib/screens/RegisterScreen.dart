@@ -21,6 +21,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // Para evitar múltiples envíos
   bool _isLoading = false;
 
+  // Ícono dinámico para el correo
+  Widget? _correoSuffix;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicialmente muestra X
+    _correoSuffix = const Icon(Icons.close, color: Colors.red);
+
+    // Escuchar cambios en el campo de correo
+    correoCtrl.addListener(_validarCorreo);
+  }
+
+  @override
+  void dispose() {
+    correoCtrl.removeListener(_validarCorreo);
+    super.dispose();
+  }
+
+  void _validarCorreo() {
+    final email = correoCtrl.text.trim();
+
+    // Verificar si termina con el dominio
+    if (email.endsWith('@gmail.com') || email.endsWith('@outlook.com')) {
+      setState(() => _correoSuffix = const Icon(Icons.check_circle, color: Colors.green));
+    } else {
+      setState(() => _correoSuffix = const Icon(Icons.close, color: Colors.red));
+    }
+  }
+
   // Función para registrarse
   Future<void> _registrarUsuario() async {
     if (_isLoading) return;
@@ -127,7 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _buildField(
                           correoCtrl,
                           "Correo Electrónico",
-                          suffix: const Icon(Icons.check_circle, color: Colors.green),
+                          isEmail: true
                         ),
                         const SizedBox(height: 15),
 
@@ -230,7 +260,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Reutilizable
   Widget _buildField(TextEditingController ctrl, String hint,
-      {Widget? suffix}) {
+      {bool isEmail = false}) {
     return TextField(
       controller: ctrl,
       style: const TextStyle(color: Colors.white),
@@ -239,7 +269,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         hintStyle: const TextStyle(color: Colors.grey),
         filled: true,
         fillColor: Colors.grey[850],
-        suffixIcon: suffix,
+        suffixIcon: isEmail ? _correoSuffix : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.yellow),

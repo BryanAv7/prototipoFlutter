@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'HomeScreen.dart';
 import 'RegisterScreen.dart';
+import 'HomeUserScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +19,37 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Control para mostrar/ocultar contraseña
   bool _obscurePassword = true;
+
+  // Ícono dinámico para el correo
+  Widget? _correoSuffix;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicialmente muestra X
+    _correoSuffix = const Icon(Icons.close, color: Colors.red);
+
+    // Escuchar cambios en el campo de correo
+    correoController.addListener(_validarCorreo);
+  }
+
+  @override
+  void dispose() {
+    correoController.removeListener(_validarCorreo);
+    super.dispose();
+  }
+
+  void _validarCorreo() {
+    final email = correoController.text.trim();
+
+    // Verificar si termina con el dominio
+    if (email.endsWith('@gmail.com') || email.endsWith('@outlook.com')) {
+      setState(() => _correoSuffix = const Icon(Icons.check_circle, color: Colors.green));
+    } else {
+      setState(() => _correoSuffix = const Icon(Icons.close, color: Colors.red));
+    }
+  }
+
 
   Future<void> _login() async {
     final correo = correoController.text.trim();
@@ -60,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // Navegar al Home
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
+      MaterialPageRoute(builder: (context) => const HomeUserScreen()),
     );
   }
 
@@ -124,6 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Colors.yellow),
                             ),
+                              suffixIcon: _correoSuffix,
                           ),
                         ),
 
