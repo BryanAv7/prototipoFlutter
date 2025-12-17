@@ -208,8 +208,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                        const AddMotorcycleScreen()),
+                      builder: (context) => AddMotorcycleScreen(usuario: usuario!),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.motorcycle,
