@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'EditProfileScreen.dart';
 import 'AddMotorcycleScreen.dart';
+import 'ViewMotorcycleScreen.dart';
 import '../models/usuario.dart';
 import '../models/moto.dart';
 import '../services/moto_service.dart';
@@ -47,8 +48,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                 children: [
                   TextSpan(
                     text: '$label1: ',
-                    style: const TextStyle(
-                        color: Colors.white70, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
                   ),
                   TextSpan(
                     text: value1,
@@ -65,8 +65,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                 children: [
                   TextSpan(
                     text: '$label2: ',
-                    style: const TextStyle(
-                        color: Colors.white70, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
                   ),
                   TextSpan(
                     text: value2,
@@ -123,8 +122,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                       : null,
                   child: (usuario!.rutaImagen == null ||
                       usuario!.rutaImagen!.isEmpty)
-                      ? const Icon(Icons.person,
-                      color: Colors.grey, size: 32)
+                      ? const Icon(Icons.person, color: Colors.grey, size: 32)
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -139,35 +137,36 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   ),
                 ),
                 const Spacer(),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (usuario != null) {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              EditProfileScreen(usuario: usuario!),
-                        ),
-                      );
-                      loadUser();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.yellow[700],
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6)),
-                    padding:
-                    const EdgeInsets.symmetric(vertical: 6),
-                  ),
-                  child: const Text(
-                    'Editar',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                    TextStyle(color: Colors.black, fontSize: 12),
+                SizedBox(
+                  width: 75,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (usuario != null) {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                EditProfileScreen(usuario: usuario!),
+                          ),
+                        );
+                        loadUser();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.yellow[700],
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                    ),
+                    child: const Text(
+                      'Editar Perfil',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.black, fontSize: 12),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () {
                     print('Compartir perfil');
@@ -176,20 +175,20 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     backgroundColor: Colors.yellow[700],
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6)),
-                    padding:
-                    const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                   ),
                   child: const Text(
                     'Compartir',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style:
-                    TextStyle(color: Colors.black, fontSize: 12),
+                    style: TextStyle(color: Colors.black, fontSize: 12),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 1),
+            const Divider(color: Colors.grey, thickness: 1),
+            const SizedBox(height: 8),
             // Descripción
             const Text(
               'Descripción',
@@ -210,11 +209,12 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                 usuario!.descripcion?.isNotEmpty == true
                     ? usuario!.descripcion!
                     : 'Aún no has agregado una descripción.',
-                style:
-                const TextStyle(color: Colors.grey, fontSize: 16),
+                style: const TextStyle(color: Colors.grey, fontSize: 16),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 1),
+            const Divider(color: Colors.grey, thickness: 1),
+            const SizedBox(height: 12),
             // Garaje virtual
             const Text(
               'Garaje Virtual',
@@ -225,109 +225,109 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[850],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: motos.isEmpty
-                    ? [
-                  const Icon(Icons.motorcycle,
-                      color: Colors.grey, size: 48),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'No tienes motos en tu garaje',
-                    style: TextStyle(
-                        color: Colors.grey, fontSize: 16),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    '¡Añade tu primera moto!',
-                    style: TextStyle(
-                        color: Colors.white, fontSize: 14),
-                  ),
-                ]
-                    : motos.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  Moto moto = entry.value;
-                  bool isSelected = selectedMotoIndex == index;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedMotoIndex = index;
-                      });
-                    },
-                    child: Card(
-                      color: Colors.grey[850],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: isSelected
-                            ? const BorderSide(
-                            color: Colors.yellow, width: 2)
-                            : BorderSide.none,
-                      ),
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[700],
-                                image: moto.ruta_imagenMotos != null &&
-                                    moto.ruta_imagenMotos!
-                                        .isNotEmpty
-                                    ? DecorationImage(
-                                  image: NetworkImage(
-                                      moto.ruta_imagenMotos!),
-                                  fit: BoxFit.cover,
-                                )
+            ConstrainedBox(
+              constraints: motos.isEmpty
+                  ? const BoxConstraints() // se ajusta al contenido si no hay motos
+                  : const BoxConstraints(maxHeight: 400),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[850],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: motos.isEmpty
+                    ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.motorcycle, color: Colors.grey, size: 48),
+                    SizedBox(height: 12),
+                    Text(
+                      'No tienes motos en tu garaje',
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      '¡Añade tu primera moto!',
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ],
+                )
+                    : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: motos.length,
+                  itemBuilder: (context, index) {
+                    final motoItem = motos[index];
+                    final isSelected = selectedMotoIndex == index;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (selectedMotoIndex == index) {
+                            selectedMotoIndex = null;
+                          } else {
+                            selectedMotoIndex = index;
+                          }
+                        });
+                      },
+                      child: Card(
+                        color: Colors.grey[850],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: isSelected
+                              ? const BorderSide(
+                              color: Colors.yellow, width: 2)
+                              : BorderSide.none,
+                        ),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[700],
+                                  image: motoItem.ruta_imagenMotos != null &&
+                                      motoItem.ruta_imagenMotos!.isNotEmpty
+                                      ? DecorationImage(
+                                    image: NetworkImage(
+                                        motoItem.ruta_imagenMotos!),
+                                    fit: BoxFit.cover,
+                                  )
+                                      : null,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: (motoItem.ruta_imagenMotos == null ||
+                                    motoItem.ruta_imagenMotos!.isEmpty)
+                                    ? const Icon(Icons.motorcycle,
+                                    color: Colors.grey)
                                     : null,
-                                borderRadius:
-                                BorderRadius.circular(8),
                               ),
-                              child: (moto.ruta_imagenMotos == null ||
-                                  moto.ruta_imagenMotos!
-                                      .isEmpty)
-                                  ? const Icon(Icons.motorcycle,
-                                  color: Colors.grey)
-                                  : null,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                  buildMotoRow(
-                                      'Marca',
-                                      moto.marca ?? '-',
-                                      'Placa',
-                                      moto.placa ?? '-'),
-                                  buildMotoRow(
-                                      'Modelo',
-                                      moto.modelo ?? '-',
-                                      'Año',
-                                      moto.anio?.toString() ?? '-'),
-                                  buildMotoRow(
-                                      'Kilometraje',
-                                      '${moto.kilometraje?.toString() ?? '-'} km',
-                                      'Cilindraje',
-                                      '${moto.cilindraje?.toString() ?? '-'} cc'),
-                                ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    buildMotoRow('Marca', motoItem.marca ?? '-',
+                                        'Placa', motoItem.placa ?? '-'),
+                                    buildMotoRow('Modelo', motoItem.modelo ?? '-',
+                                        'Año', motoItem.anio?.toString() ?? '-'),
+                                    buildMotoRow(
+                                        'Kilometraje',
+                                        '${motoItem.kilometraje?.toString() ?? '-'} km',
+                                        'Cilindraje',
+                                        '${motoItem.cilindraje?.toString() ?? '-'} cc'),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -338,13 +338,11 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          AddMotorcycleScreen(usuario: usuario!),
-                    ),
+                        builder: (context) =>
+                            AddMotorcycleScreen(usuario: usuario!)),
                   ).then((_) => loadUser());
                 },
-                icon: const Icon(Icons.motorcycle,
-                    color: Colors.black, size: 20),
+                icon: const Icon(Icons.motorcycle, color: Colors.black, size: 20),
                 label: const Text(
                   'AÑADIR MI MOTO',
                   style: TextStyle(
@@ -366,6 +364,32 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           ],
         ),
       ),
+      floatingActionButton: selectedMotoIndex != null
+          ? FloatingActionButton.extended(
+        onPressed: () {
+          final selectedMoto = motos[selectedMotoIndex!];
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ViewMotorcycleScreen(
+                usuario: usuario!,
+                moto: selectedMoto,
+              ),
+            ),
+          ).then((updated) {
+            if (updated == true) {
+              loadUser();
+            }
+          });
+        },
+        backgroundColor: Colors.yellow[700],
+        label: const Text(
+          'Editar',
+          style: TextStyle(color: Colors.black),
+        ),
+        icon: const Icon(Icons.edit, color: Colors.black),
+      )
+          : null,
     );
   }
 }

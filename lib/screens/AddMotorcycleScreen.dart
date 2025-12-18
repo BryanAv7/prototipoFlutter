@@ -107,12 +107,12 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     bool success = await MotoService.crearMoto(moto);
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Moto registrada con éxito')),
+        const SnackBar(content: Text('Moto registrada con éxito')),
       );
       Navigator.pop(context, moto);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ Error al registrar la moto.')),
+        const SnackBar(content: Text('Error al registrar la moto.')),
       );
     }
   }

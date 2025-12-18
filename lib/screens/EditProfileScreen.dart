@@ -142,10 +142,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: () async {
-                  String rutaImagenActualizada =
-                      widget.usuario.rutaImagen ?? '';
+                  String rutaImagenActualizada = widget.usuario.rutaImagen ?? '';
 
                   if (nuevaImagen != null) {
                     final url = await subirImagen(nuevaImagen!);
@@ -162,13 +161,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     nombreCompleto: widget.usuario.nombreCompleto,
                   );
 
-                  final ok =
-                  await UsuarioService.updateUsuario(usuarioActualizado);
+                  final ok = await UsuarioService.updateUsuario(usuarioActualizado);
 
                   if (ok) {
-                    // 🔹 CLAVE: guardar usuario actualizado
-                    await TokenManager.saveUserJson(
-                        usuarioActualizado.toJson());
+                    await TokenManager.saveUserJson(usuarioActualizado.toJson());
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Perfil actualizado')),
@@ -184,13 +180,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.yellow[700],
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Guardar',
-                    style: TextStyle(color: Colors.black, fontSize: 16)),
+                icon: const Icon(Icons.edit, color: Colors.black),
+                label: const Text(
+                  'Guardar Cambios',
+                  style: TextStyle(color: Colors.black, fontSize: 16),
+                ),
               ),
             ),
+
           ],
         ),
       ),
