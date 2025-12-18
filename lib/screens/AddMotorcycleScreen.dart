@@ -24,7 +24,12 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
 
   String? selectedTipoMoto;
   final List<String> tiposMoto = [
-    'Scooters', 'Naked', 'Deportiva', 'Scrambler', 'Utilitarios', 'Otro'
+    'Scooters',
+    'Naked',
+    'Deportiva',
+    'Scrambler',
+    'Utilitarios',
+    'Otro'
   ];
 
   File? nuevaImagen;
@@ -52,11 +57,17 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     super.dispose();
   }
 
+  // Seleccionar imagen principal de la moto
   Future<void> seleccionarImagen() async {
     final XFile? imagen = await _picker.pickImage(source: ImageSource.gallery);
     if (imagen != null) {
       setState(() => nuevaImagen = File(imagen.path));
     }
+  }
+
+  // 📷 Cámara para placa (SIN lógica todavía)
+  Future<void> abrirCamaraPlaca() async {
+    await _picker.pickImage(source: ImageSource.camera);
   }
 
   Future<void> _saveMoto() async {
@@ -66,7 +77,8 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         selectedTipoMoto == null ||
         anioController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, completa los campos obligatorios.')),
+        const SnackBar(
+            content: Text('Por favor, completa los campos obligatorios.')),
       );
       return;
     }
@@ -75,17 +87,24 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     try {
       anio = int.parse(anioController.text.trim());
       kilometraje = int.parse(kilometrajeController.text.trim());
-      cilindraje = int.parse(RegExp(r'\d+').stringMatch(cilindrajeController.text.trim()) ?? '');
+      cilindraje = int.parse(
+        RegExp(r'\d+')
+            .stringMatch(cilindrajeController.text.trim()) ??
+            '',
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Año, kilometraje y cilindraje deben ser números válidos.')),
+        const SnackBar(
+            content:
+            Text('Año, kilometraje y cilindraje deben ser números válidos.')),
       );
       return;
     }
 
     String rutaImagen = '';
     if (nuevaImagen != null) {
-      final uploadedImage = await MotoService.uploadMotoImage(nuevaImagen!);
+      final uploadedImage =
+      await MotoService.uploadMotoImage(nuevaImagen!);
       if (uploadedImage != null) {
         rutaImagen = uploadedImage;
       }
@@ -122,7 +141,8 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     return Scaffold(
       backgroundColor: Colors.black87,
       appBar: AppBar(
-        title: const Text('Añadir Vehículo', style: TextStyle(color: Colors.black)),
+        title:
+        const Text('Añadir Vehículo', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.yellow[700],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -134,7 +154,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Imagen de la moto centrada ---
+            // Imagen de la moto
             Center(
               child: Column(
                 children: [
@@ -143,14 +163,17 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.grey[850],
-                      backgroundImage: nuevaImagen != null ? FileImage(nuevaImagen!) : null,
+                      backgroundImage:
+                      nuevaImagen != null ? FileImage(nuevaImagen!) : null,
                       child: nuevaImagen == null
-                          ? const Icon(Icons.camera_alt, color: Colors.grey, size: 36)
+                          ? const Icon(Icons.camera_alt,
+                          color: Colors.grey, size: 36)
                           : null,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Text('Toca la imagen para seleccionar', style: TextStyle(color: Colors.grey)),
+                  const Text('Toca la imagen para seleccionar',
+                      style: TextStyle(color: Colors.grey)),
                 ],
               ),
             ),
@@ -160,20 +183,64 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
             const SizedBox(height: 15),
             _buildTextField('Modelo', controller: modeloController),
             const SizedBox(height: 15),
-            _buildTextField('Placa', controller: placaController, hint: 'Ej: ABC-123'),
+
+            // Campo placa + Foto detección
+            TextField(
+              controller: placaController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Placa',
+                labelStyle: const TextStyle(color: Colors.grey),
+                hintText: 'Ej: ABC-123',
+                hintStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.grey[850],
+                suffixIcon: IconButton(
+                  icon:
+                  const Icon(Icons.camera_alt, color: Colors.yellow),
+                  onPressed: abrirCamaraPlaca,
+                  tooltip: 'Tomar foto de la placa',
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.yellow),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.yellow),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide:
+                  const BorderSide(color: Colors.yellow, width: 2),
+                ),
+              ),
+            ),
+
             const SizedBox(height: 15),
-            _buildTextField('Kilometraje', controller: kilometrajeController, hint: 'Ej: 15000', keyboardType: TextInputType.number),
+            _buildTextField('Kilometraje',
+                controller: kilometrajeController,
+                hint: 'Ej: 15000',
+                keyboardType: TextInputType.number),
             const SizedBox(height: 15),
+
             _buildDropdownField(
               label: 'Tipo',
               value: selectedTipoMoto,
-              onChanged: (value) => setState(() => selectedTipoMoto = value),
+              onChanged: (value) =>
+                  setState(() => selectedTipoMoto = value),
               items: tiposMoto,
             ),
+
             const SizedBox(height: 15),
-            _buildTextField('Año', controller: anioController, hint: 'Ej: 2022', keyboardType: TextInputType.number),
+            _buildTextField('Año',
+                controller: anioController,
+                hint: 'Ej: 2022',
+                keyboardType: TextInputType.number),
             const SizedBox(height: 15),
-            _buildTextField('Cilindraje', controller: cilindrajeController, hint: 'Ej: 650'),
+            _buildTextField('Cilindraje',
+                controller: cilindrajeController, hint: 'Ej: 650'),
+
             const SizedBox(height: 30),
 
             SizedBox(
@@ -183,9 +250,12 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.yellow[700],
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Guardar', style: TextStyle(color: Colors.black, fontSize: 16)),
+                child: const Text('Guardar',
+                    style:
+                    TextStyle(color: Colors.black, fontSize: 16)),
               ),
             ),
           ],
@@ -194,7 +264,12 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     );
   }
 
-  Widget _buildTextField(String label, {required TextEditingController controller, String? hint, TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(
+      String label, {
+        required TextEditingController controller,
+        String? hint,
+        TextInputType keyboardType = TextInputType.text,
+      }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -208,21 +283,27 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         fillColor: Colors.grey[850],
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.yellow),
+          borderSide: const BorderSide(color: Colors.yellow),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.yellow),
+          borderSide: const BorderSide(color: Colors.yellow),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.yellow, width: 2),
+          borderSide:
+          const BorderSide(color: Colors.yellow, width: 2),
         ),
       ),
     );
   }
 
-  Widget _buildDropdownField({required String label, required String? value, required ValueChanged<String?> onChanged, required List<String> items}) {
+  Widget _buildDropdownField({
+    required String label,
+    required String? value,
+    required ValueChanged<String?> onChanged,
+    required List<String> items,
+  }) {
     return InputDecorator(
       decoration: InputDecoration(
         labelText: label,
@@ -231,25 +312,31 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         fillColor: Colors.grey[850],
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.yellow),
+          borderSide: const BorderSide(color: Colors.yellow),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.yellow),
+          borderSide: const BorderSide(color: Colors.yellow),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.yellow, width: 2),
+          borderSide:
+          const BorderSide(color: Colors.yellow, width: 2),
         ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: const Text('Selecciona tipo', style: TextStyle(color: Colors.grey)),
+          hint: const Text('Selecciona tipo',
+              style: TextStyle(color: Colors.grey)),
           isExpanded: true,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style:
+          const TextStyle(color: Colors.white, fontSize: 16),
           dropdownColor: Colors.grey[850],
-          items: items.map((tipo) => DropdownMenuItem(value: tipo, child: Text(tipo))).toList(),
+          items: items
+              .map((tipo) =>
+              DropdownMenuItem(value: tipo, child: Text(tipo)))
+              .toList(),
           onChanged: onChanged,
         ),
       ),
