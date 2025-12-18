@@ -24,7 +24,7 @@ class Usuario {
     descripcion: json['descripcion'],
     pais: json['pais'],
     ciudad: json['ciudad'],
-    rutaImagen: json['ruta_imagen'],
+    rutaImagen: json['rutaimagen'],
   );
 
   Map<String, dynamic> toJson() => {
@@ -34,6 +34,6 @@ class Usuario {
     'descripcion': descripcion,
     'pais': pais,
     'ciudad': ciudad,
-    'ruta_imagen': rutaImagen,
+    'rutaimagen': rutaImagen,
   };
 }
