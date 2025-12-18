@@ -7,10 +7,11 @@ import '../utils/token_manager.dart';
 
 class MotoService {
 
+  // =========================
   // Crear una nueva moto
+  // =========================
   static Future<bool> crearMoto(Moto moto) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/motos');
-
     final Map<String, dynamic> body = moto.toJson();
 
     final token = await TokenManager.getToken();
@@ -27,12 +28,14 @@ class MotoService {
       );
 
       return response.statusCode == 200 || response.statusCode == 201;
-    } catch (_) {
+    } catch (e) {
       return false;
     }
   }
 
-  // Obtener la moto por el ID
+  // =========================
+  // Obtener la moto por ID
+  // =========================
   static Future<Moto?> obtenerMotoPorId(int id) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/motos/$id');
 
@@ -52,14 +55,16 @@ class MotoService {
         return Moto.fromJson(data);
       }
       return null;
-    } catch (_) {
+    } catch (e) {
       return null;
     }
   }
 
+  // =========================
   // Listar todas las motos
+  // =========================
   static Future<List<Moto>> listarMotos() async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/motos');
+    final url = Uri.parse('${ApiConfig.baseUrl}/motos');
 
     final token = await TokenManager.getToken();
     if (token == null) return [];
@@ -77,14 +82,16 @@ class MotoService {
         return list.map((item) => Moto.fromJson(item)).toList();
       }
       return [];
-    } catch (_) {
+    } catch (e) {
       return [];
     }
   }
 
-  // Listar por un usuario en especifico
+  // =========================
+  // Listar motos por usuario
+  // =========================
   static Future<List<Moto>> listarMotosPorUsuario(int idUsuario) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/motos/usuario/$idUsuario');
+    final url = Uri.parse('${ApiConfig.baseUrl}/motos/usuario/$idUsuario');
 
     final token = await TokenManager.getToken();
     if (token == null) return [];
@@ -102,13 +109,14 @@ class MotoService {
         return list.map((item) => Moto.fromJson(item)).toList();
       }
       return [];
-    } catch (_) {
+    } catch (e) {
       return [];
     }
   }
 
-
-  // Actualizar la moto y obtener la respuesta
+  // =========================
+  // Actualizar moto
+  // =========================
   static Future<Moto?> actualizarMotoAndGet(Moto motoActualizada) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/motos/${motoActualizada.id_moto}');
 
@@ -129,12 +137,14 @@ class MotoService {
         return Moto.fromJson(jsonDecode(response.body));
       }
       return null;
-    } catch (_) {
+    } catch (e) {
       return null;
     }
   }
 
-  // Subir la imagen de la moto
+  // =========================
+  // Subir imagen de moto
+  // =========================
   static Future<String?> uploadMotoImage(File file) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/motos/upload');
 
@@ -144,6 +154,8 @@ class MotoService {
     final token = await TokenManager.getToken();
     if (token != null) {
       request.headers['Authorization'] = 'Bearer $token';
+    } else {
+      return null;
     }
 
     try {
@@ -154,7 +166,7 @@ class MotoService {
         return respStr.trim();
       }
       return null;
-    } catch (_) {
+    } catch (e) {
       return null;
     }
   }

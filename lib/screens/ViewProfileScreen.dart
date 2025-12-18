@@ -17,6 +17,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
   Usuario? usuario;
   List<Moto> motos = [];
   bool isLoading = true;
+  int? selectedMotoIndex;
 
   @override
   void initState() {
@@ -28,12 +29,56 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     final jsonMap = await TokenManager.getUserJson();
     if (jsonMap != null) {
       usuario = Usuario.fromJson(jsonMap);
-      // Cargar motos del usuario
       motos = await MotoService.listarMotosPorUsuario(usuario!.idUsuario!);
     }
     setState(() {
       isLoading = false;
     });
+  }
+
+  Widget buildMotoRow(String label1, String value1, String label2, String value2) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$label1: ',
+                    style: const TextStyle(
+                        color: Colors.white70, fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text: value1,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$label2: ',
+                    style: const TextStyle(
+                        color: Colors.white70, fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text: value2,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -111,7 +156,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     backgroundColor: Colors.yellow[700],
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6)),
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    padding:
+                    const EdgeInsets.symmetric(vertical: 6),
                   ),
                   child: const Text(
                     'Editar',
@@ -130,7 +176,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     backgroundColor: Colors.yellow[700],
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6)),
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    padding:
+                    const EdgeInsets.symmetric(vertical: 6),
                   ),
                   child: const Text(
                     'Compartir',
@@ -163,7 +210,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                 usuario!.descripcion?.isNotEmpty == true
                     ? usuario!.descripcion!
                     : 'Aún no has agregado una descripción.',
-                style: const TextStyle(color: Colors.grey, fontSize: 16),
+                style:
+                const TextStyle(color: Colors.grey, fontSize: 16),
               ),
             ),
             const SizedBox(height: 20),
@@ -183,60 +231,103 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                 color: Colors.grey[850],
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: motos.isEmpty
-                  ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.motorcycle,
+              child: Column(
+                children: motos.isEmpty
+                    ? [
+                  const Icon(Icons.motorcycle,
                       color: Colors.grey, size: 48),
-                  SizedBox(height: 12),
-                  Text(
+                  const SizedBox(height: 12),
+                  const Text(
                     'No tienes motos en tu garaje',
-                    style:
-                    TextStyle(color: Colors.grey, fontSize: 16),
+                    style: TextStyle(
+                        color: Colors.grey, fontSize: 16),
                   ),
-                  SizedBox(height: 6),
-                  Text(
+                  const SizedBox(height: 6),
+                  const Text(
                     '¡Añade tu primera moto!',
                     style: TextStyle(
                         color: Colors.white, fontSize: 14),
                   ),
-                ],
-              )
-                  : ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: motos.length,
-                itemBuilder: (context, index) {
-                  final moto = motos[index];
-                  return Card(
-                    color: Colors.grey[850],
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        radius: 25,
-                        backgroundColor: Colors.grey[700],
-                        backgroundImage: moto.ruta_imagenMotos != null &&
-                            moto.ruta_imagenMotos!.isNotEmpty
-                            ? NetworkImage(moto.ruta_imagenMotos!)
-                            : null,
-                        child: (moto.ruta_imagenMotos == null ||
-                            moto.ruta_imagenMotos!.isEmpty)
-                            ? const Icon(Icons.motorcycle,
-                            color: Colors.grey)
-                            : null,
+                ]
+                    : motos.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  Moto moto = entry.value;
+                  bool isSelected = selectedMotoIndex == index;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedMotoIndex = index;
+                      });
+                    },
+                    child: Card(
+                      color: Colors.grey[850],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: isSelected
+                            ? const BorderSide(
+                            color: Colors.yellow, width: 2)
+                            : BorderSide.none,
                       ),
-                      title: Text(
-                        moto.modelo ?? '',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      subtitle: Text(
-                        '${moto.marca ?? ''} • ${moto.anio ?? ''}',
-                        style: const TextStyle(color: Colors.grey),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[700],
+                                image: moto.ruta_imagenMotos != null &&
+                                    moto.ruta_imagenMotos!
+                                        .isNotEmpty
+                                    ? DecorationImage(
+                                  image: NetworkImage(
+                                      moto.ruta_imagenMotos!),
+                                  fit: BoxFit.cover,
+                                )
+                                    : null,
+                                borderRadius:
+                                BorderRadius.circular(8),
+                              ),
+                              child: (moto.ruta_imagenMotos == null ||
+                                  moto.ruta_imagenMotos!
+                                      .isEmpty)
+                                  ? const Icon(Icons.motorcycle,
+                                  color: Colors.grey)
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  buildMotoRow(
+                                      'Marca',
+                                      moto.marca ?? '-',
+                                      'Placa',
+                                      moto.placa ?? '-'),
+                                  buildMotoRow(
+                                      'Modelo',
+                                      moto.modelo ?? '-',
+                                      'Año',
+                                      moto.anio?.toString() ?? '-'),
+                                  buildMotoRow(
+                                      'Kilometraje',
+                                      '${moto.kilometraje?.toString() ?? '-'} km',
+                                      'Cilindraje',
+                                      '${moto.cilindraje?.toString() ?? '-'} cc'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
-                },
+                }).toList(),
               ),
             ),
             const SizedBox(height: 24),
