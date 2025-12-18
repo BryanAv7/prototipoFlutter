@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'EditProfileScreen.dart';
 import 'AddMotorcycleScreen.dart';
 import '../models/usuario.dart';
+import '../models/moto.dart';
+import '../services/moto_service.dart';
 import '../utils/token_manager.dart';
 
 class ViewProfileScreen extends StatefulWidget {
@@ -13,6 +15,7 @@ class ViewProfileScreen extends StatefulWidget {
 
 class _ViewProfileScreenState extends State<ViewProfileScreen> {
   Usuario? usuario;
+  List<Moto> motos = [];
   bool isLoading = true;
 
   @override
@@ -23,8 +26,12 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
 
   Future<void> loadUser() async {
     final jsonMap = await TokenManager.getUserJson();
+    if (jsonMap != null) {
+      usuario = Usuario.fromJson(jsonMap);
+      // Cargar motos del usuario
+      motos = await MotoService.listarMotosPorUsuario(usuario!.idUsuario!);
+    }
     setState(() {
-      usuario = jsonMap != null ? Usuario.fromJson(jsonMap) : null;
       isLoading = false;
     });
   }
@@ -87,7 +94,6 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   ),
                 ),
                 const Spacer(),
-                // Botón Editar
                 ElevatedButton(
                   onPressed: () async {
                     if (usuario != null) {
@@ -98,15 +104,14 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                               EditProfileScreen(usuario: usuario!),
                         ),
                       );
-                      loadUser(); // recarga después de editar
+                      loadUser();
                     }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.yellow[700],
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6)),
-                    padding:
-                    const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                   ),
                   child: const Text(
                     'Editar',
@@ -117,18 +122,15 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                // Botón Compartir
                 ElevatedButton(
                   onPressed: () {
-                    // Aquí puedes implementar la acción de compartir
                     print('Compartir perfil');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.yellow[700],
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6)),
-                    padding:
-                    const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                   ),
                   child: const Text(
                     'Compartir',
@@ -161,8 +163,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                 usuario!.descripcion?.isNotEmpty == true
                     ? usuario!.descripcion!
                     : 'Aún no has agregado una descripción.',
-                style:
-                const TextStyle(color: Colors.grey, fontSize: 16),
+                style: const TextStyle(color: Colors.grey, fontSize: 16),
               ),
             ),
             const SizedBox(height: 20),
@@ -177,27 +178,65 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
             ),
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.grey[850],
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
+              child: motos.isEmpty
+                  ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
-                  Icon(Icons.motorcycle, color: Colors.grey, size: 48),
+                  Icon(Icons.motorcycle,
+                      color: Colors.grey, size: 48),
                   SizedBox(height: 12),
                   Text(
                     'No tienes motos en tu garaje',
-                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                    style:
+                    TextStyle(color: Colors.grey, fontSize: 16),
                   ),
                   SizedBox(height: 6),
                   Text(
                     '¡Añade tu primera moto!',
-                    style:
-                    TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(
+                        color: Colors.white, fontSize: 14),
                   ),
                 ],
+              )
+                  : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: motos.length,
+                itemBuilder: (context, index) {
+                  final moto = motos[index];
+                  return Card(
+                    color: Colors.grey[850],
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        radius: 25,
+                        backgroundColor: Colors.grey[700],
+                        backgroundImage: moto.ruta_imagenMotos != null &&
+                            moto.ruta_imagenMotos!.isNotEmpty
+                            ? NetworkImage(moto.ruta_imagenMotos!)
+                            : null,
+                        child: (moto.ruta_imagenMotos == null ||
+                            moto.ruta_imagenMotos!.isEmpty)
+                            ? const Icon(Icons.motorcycle,
+                            color: Colors.grey)
+                            : null,
+                      ),
+                      title: Text(
+                        moto.modelo ?? '',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        '${moto.marca ?? ''} • ${moto.anio ?? ''}',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 24),
@@ -208,9 +247,10 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AddMotorcycleScreen(usuario: usuario!),
+                      builder: (context) =>
+                          AddMotorcycleScreen(usuario: usuario!),
                     ),
-                  );
+                  ).then((_) => loadUser());
                 },
                 icon: const Icon(Icons.motorcycle,
                     color: Colors.black, size: 20),

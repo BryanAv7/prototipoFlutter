@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/moto.dart';
 import '../models/usuario.dart';
 import '../services/moto_service.dart';
@@ -21,15 +23,12 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
   late TextEditingController anioController;
 
   String? selectedTipoMoto;
-
   final List<String> tiposMoto = [
-    'Scooters',
-    'Naked',
-    'Deportiva',
-    'Scrambler',
-    'Utilitarios',
-    'Otro'
+    'Scooters', 'Naked', 'Deportiva', 'Scrambler', 'Utilitarios', 'Otro'
   ];
+
+  File? nuevaImagen;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -53,8 +52,14 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     super.dispose();
   }
 
+  Future<void> seleccionarImagen() async {
+    final XFile? imagen = await _picker.pickImage(source: ImageSource.gallery);
+    if (imagen != null) {
+      setState(() => nuevaImagen = File(imagen.path));
+    }
+  }
+
   Future<void> _saveMoto() async {
-    // Validación mínima
     if (marcaController.text.isEmpty ||
         modeloController.text.isEmpty ||
         placaController.text.isEmpty ||
@@ -67,7 +72,6 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     }
 
     int? anio, kilometraje, cilindraje;
-
     try {
       anio = int.parse(anioController.text.trim());
       kilometraje = int.parse(kilometrajeController.text.trim());
@@ -79,6 +83,13 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
       return;
     }
 
+    String rutaImagen = '';
+    if (nuevaImagen != null) {
+      final uploadedImage = await MotoService.uploadMotoImage(nuevaImagen!);
+      if (uploadedImage != null) {
+        rutaImagen = uploadedImage;
+      }
+    }
 
     final moto = Moto(
       id_moto: null,
@@ -90,7 +101,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
       kilometraje: kilometraje,
       cilindraje: cilindraje,
       id_usuario: widget.usuario.idUsuario!,
-      ruta_imagenMotos: '', // Vacio
+      ruta_imagenMotos: rutaImagen,
     );
 
     bool success = await MotoService.crearMoto(moto);
@@ -123,20 +134,36 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Campos ---
+            // --- Imagen de la moto centrada ---
+            Center(
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: seleccionarImagen,
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey[850],
+                      backgroundImage: nuevaImagen != null ? FileImage(nuevaImagen!) : null,
+                      child: nuevaImagen == null
+                          ? const Icon(Icons.camera_alt, color: Colors.grey, size: 36)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text('Toca la imagen para seleccionar', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
             _buildTextField('Marca', controller: marcaController),
             const SizedBox(height: 15),
-
             _buildTextField('Modelo', controller: modeloController),
             const SizedBox(height: 15),
-
             _buildTextField('Placa', controller: placaController, hint: 'Ej: ABC-123'),
             const SizedBox(height: 15),
-
             _buildTextField('Kilometraje', controller: kilometrajeController, hint: 'Ej: 15000', keyboardType: TextInputType.number),
             const SizedBox(height: 15),
-
-            // --- Tipo de Moto ---
             _buildDropdownField(
               label: 'Tipo',
               value: selectedTipoMoto,
@@ -144,14 +171,11 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
               items: tiposMoto,
             ),
             const SizedBox(height: 15),
-
             _buildTextField('Año', controller: anioController, hint: 'Ej: 2022', keyboardType: TextInputType.number),
             const SizedBox(height: 15),
-
             _buildTextField('Cilindraje', controller: cilindrajeController, hint: 'Ej: 650'),
             const SizedBox(height: 30),
 
-            // --- Botón Guardar ---
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -170,11 +194,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     );
   }
 
-  Widget _buildTextField(String label, {
-    required TextEditingController controller,
-    String? hint,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
+  Widget _buildTextField(String label, {required TextEditingController controller, String? hint, TextInputType keyboardType = TextInputType.text}) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -202,12 +222,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     );
   }
 
-  Widget _buildDropdownField({
-    required String label,
-    required String? value,
-    required ValueChanged<String?> onChanged,
-    required List<String> items,
-  }) {
+  Widget _buildDropdownField({required String label, required String? value, required ValueChanged<String?> onChanged, required List<String> items}) {
     return InputDecorator(
       decoration: InputDecoration(
         labelText: label,
@@ -234,12 +249,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
           isExpanded: true,
           style: const TextStyle(color: Colors.white, fontSize: 16),
           dropdownColor: Colors.grey[850],
-          items: items.map((tipo) {
-            return DropdownMenuItem(
-              value: tipo,
-              child: Text(tipo),
-            );
-          }).toList(),
+          items: items.map((tipo) => DropdownMenuItem(value: tipo, child: Text(tipo))).toList(),
           onChanged: onChanged,
         ),
       ),
