@@ -65,9 +65,163 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     }
   }
 
-  // 📷 Cámara para placa (SIN lógica todavía)
+  // Detectar placa con OCR
   Future<void> abrirCamaraPlaca() async {
-    await _picker.pickImage(source: ImageSource.camera);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Detectar Placa',
+                  style: TextStyle(
+                    color: Colors.yellow[700],
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.yellow),
+                title: const Text('Tomar foto',
+                    style: TextStyle(color: Colors.white)),
+                subtitle: const Text('Usa la cámara para detectar la placa',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _procesarImagenPlaca(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.yellow),
+                title: const Text('Elegir de galería',
+                    style: TextStyle(color: Colors.white)),
+                subtitle: const Text('Selecciona una foto existente',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _procesarImagenPlaca(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _procesarImagenPlaca(ImageSource source) async {
+    final XFile? imagen = await _picker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
+
+    if (imagen == null) return;
+
+    final File imageFile = File(imagen.path);
+
+    // Loader con mensaje mejorado
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: Colors.yellow),
+              const SizedBox(height: 16),
+              const Text(
+                'Detectando placa...',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final placaDetectada = await MotoService.detectarPlacaOCR(imageFile);
+
+      Navigator.pop(context); // cerrar loader
+
+      if (placaDetectada != null && placaDetectada.isNotEmpty) {
+        setState(() {
+          placaController.text = placaDetectada;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('Placa detectada: $placaDetectada'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.grey[850],
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.warning_amber, color: Colors.orange),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text('No se pudo detectar la placa. Inténtalo de nuevo.'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.grey[850],
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Reintentar',
+              textColor: Colors.yellow,
+              onPressed: abrirCamaraPlaca,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context); // cerrar loader
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.error, color: Colors.red),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text('Error al procesar la imagen'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.grey[850],
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _saveMoto() async {
@@ -77,8 +231,19 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         selectedTipoMoto == null ||
         anioController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Por favor, completa los campos obligatorios.')),
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.warning, color: Colors.orange),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text('Por favor, completa los campos obligatorios.'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.grey[850],
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -94,12 +259,48 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-            Text('Año, kilometraje y cilindraje deben ser números válidos.')),
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.error, color: Colors.red),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text('Año, kilometraje y cilindraje deben ser números válidos.'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.grey[850],
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
+
+    // Loader mientras guarda
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: Colors.yellow),
+              const SizedBox(height: 16),
+              const Text(
+                'Guardando moto...',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
 
     String rutaImagen = '';
     if (nuevaImagen != null) {
@@ -112,7 +313,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
 
     final moto = Moto(
       id_moto: null,
-      placa: placaController.text.trim(),
+      placa: placaController.text.trim().toUpperCase(),
       anio: anio,
       marca: marcaController.text.trim(),
       modelo: modeloController.text.trim(),
@@ -124,14 +325,41 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     );
 
     bool success = await MotoService.crearMoto(moto);
+
+    Navigator.pop(context); // cerrar loader
+
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Moto registrada con éxito')),
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text('¡Moto registrada con éxito!'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.grey[850],
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       Navigator.pop(context, moto);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al registrar la moto.')),
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.error, color: Colors.red),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text('Error al registrar la moto. Inténtalo de nuevo.'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.grey[850],
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -141,9 +369,12 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     return Scaffold(
       backgroundColor: Colors.black87,
       appBar: AppBar(
-        title:
-        const Text('Añadir Vehículo', style: TextStyle(color: Colors.black)),
+        title: const Text(
+          'Añadir Vehículo',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.normal),
+        ),
         backgroundColor: Colors.yellow[700],
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
@@ -184,10 +415,11 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
             _buildTextField('Modelo', controller: modeloController),
             const SizedBox(height: 15),
 
-            // Campo placa + Foto detección
+            // Campo placa
             TextField(
               controller: placaController,
               style: const TextStyle(color: Colors.white),
+              textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
                 labelText: 'Placa',
                 labelStyle: const TextStyle(color: Colors.grey),
@@ -195,11 +427,11 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
                 hintStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey[850],
+                prefixIcon: const Icon(Icons.credit_card, color: Colors.yellow),
                 suffixIcon: IconButton(
-                  icon:
-                  const Icon(Icons.camera_alt, color: Colors.yellow),
+                  icon: const Icon(Icons.camera_alt, color: Colors.yellow),
                   onPressed: abrirCamaraPlaca,
-                  tooltip: 'Tomar foto de la placa',
+                  tooltip: 'Detectar placa con cámara',
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -211,8 +443,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                  const BorderSide(color: Colors.yellow, width: 2),
+                  borderSide: const BorderSide(color: Colors.yellow, width: 2),
                 ),
               ),
             ),
@@ -227,8 +458,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
             _buildDropdownField(
               label: 'Tipo',
               value: selectedTipoMoto,
-              onChanged: (value) =>
-                  setState(() => selectedTipoMoto = value),
+              onChanged: (value) => setState(() => selectedTipoMoto = value),
               items: tiposMoto,
             ),
 
@@ -254,8 +484,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text('Guardar',
-                    style:
-                    TextStyle(color: Colors.black, fontSize: 16)),
+                    style: TextStyle(color: Colors.black, fontSize: 16)),
               ),
             ),
           ],
@@ -291,8 +520,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide:
-          const BorderSide(color: Colors.yellow, width: 2),
+          borderSide: const BorderSide(color: Colors.yellow, width: 2),
         ),
       ),
     );
@@ -320,8 +548,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide:
-          const BorderSide(color: Colors.yellow, width: 2),
+          borderSide: const BorderSide(color: Colors.yellow, width: 2),
         ),
       ),
       child: DropdownButtonHideUnderline(
@@ -330,8 +557,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
           hint: const Text('Selecciona tipo',
               style: TextStyle(color: Colors.grey)),
           isExpanded: true,
-          style:
-          const TextStyle(color: Colors.white, fontSize: 16),
+          style: const TextStyle(color: Colors.white, fontSize: 16),
           dropdownColor: Colors.grey[850],
           items: items
               .map((tipo) =>

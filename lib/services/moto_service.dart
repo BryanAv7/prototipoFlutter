@@ -143,6 +143,39 @@ class MotoService {
   }
 
   // =========================
+  // Detectar placa con OCR
+  // =========================
+  static Future<String?> detectarPlacaOCR(File image) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/motos/ocr/placa');
+
+    final request = http.MultipartRequest('POST', url);
+    request.files.add(
+      await http.MultipartFile.fromPath('image', image.path),
+    );
+
+    final token = await TokenManager.getToken();
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    } else {
+      return null;
+    }
+
+    try {
+      final response = await request.send();
+      final respStr = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(respStr);
+        return data['placa'];
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+
+  // =========================
   // Subir imagen de moto
   // =========================
   static Future<String?> uploadMotoImage(File file) async {
