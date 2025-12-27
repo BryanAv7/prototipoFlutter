@@ -34,7 +34,7 @@ class Producto {
       codigoPersonal: json['codigo_personal'],
       nombre: json['nombre'],
       descripcion: json['descripcion'],
-      rutaImagenProductos: json['ruta_imagenProductos'] ?? '',
+      rutaImagenProductos: json['ruta_imagenproductos'] ?? '', // ← CAMBIO AQUÍ (sin la 'P' mayúscula)
       costo: json['costo']?.toDouble(),
       pvp: json['pvp']?.toDouble(),
       stock: json['stock'],
@@ -51,7 +51,7 @@ class Producto {
       'codigo_personal': codigoPersonal,
       'nombre': nombre,
       'descripcion': descripcion,
-      'ruta_imagenProductos': rutaImagenProductos,
+      'ruta_imagenproductos': rutaImagenProductos,
       'costo': costo,
       'pvp': pvp,
       'stock': stock,

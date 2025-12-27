@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/productos.dart';
 import '../services/productos_service.dart';
+import '../screens/EditProductosScreen.dart';
 
 class InventarioScreen extends StatefulWidget {
   const InventarioScreen({super.key});
@@ -14,6 +15,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
   List<Producto> productosFiltrados = [];
   bool isLoading = true;
   int? categoriaSeleccionada;
+  int? selectedProductoIndex;
 
   @override
   void initState() {
@@ -45,7 +47,6 @@ class _InventarioScreenState extends State<InventarioScreen> {
           final codigo = producto.codigoPersonal?.toLowerCase() ?? '';
           final busqueda = query.toLowerCase();
 
-          // Filtrar por búsqueda Y categoría
           bool coincideBusqueda = nombre.contains(busqueda) || codigo.contains(busqueda);
           bool coincideCategoria = categoriaSeleccionada == null ||
               producto.idCategoria == categoriaSeleccionada;
@@ -59,6 +60,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
   void _filtrarPorCategoria(int? idCategoria) {
     setState(() {
       categoriaSeleccionada = idCategoria;
+      selectedProductoIndex = null;
       _aplicarFiltros();
     });
   }
@@ -73,7 +75,6 @@ class _InventarioScreenState extends State<InventarioScreen> {
     }
   }
 
-  // ----Estados del Producto ----
   Color _getStockColor(int? stock) {
     if (stock == null) return Colors.grey;
     if (stock <= 5) return Colors.red;
@@ -98,7 +99,6 @@ class _InventarioScreenState extends State<InventarioScreen> {
       ),
       body: Column(
         children: [
-          // Barra de búsqueda
           Container(
             color: Colors.grey[850],
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -121,7 +121,6 @@ class _InventarioScreenState extends State<InventarioScreen> {
             ),
           ),
 
-          // Filtrar por categorías
           Container(
             color: Colors.grey[850],
             height: 50,
@@ -144,7 +143,6 @@ class _InventarioScreenState extends State<InventarioScreen> {
 
           const SizedBox(height: 8),
 
-          // Lista de productos con scroll
           Expanded(
             child: isLoading
                 ? const Center(
@@ -167,15 +165,45 @@ class _InventarioScreenState extends State<InventarioScreen> {
               itemCount: productosFiltrados.length,
               itemBuilder: (context, index) {
                 final producto = productosFiltrados[index];
+                final isSelected = selectedProductoIndex == index;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildProductCard(producto),
+                  child: _buildProductCard(producto, index, isSelected),
                 );
               },
             ),
           ),
         ],
       ),
+      floatingActionButton: selectedProductoIndex != null
+          ? FloatingActionButton.extended(
+        onPressed: () async {
+          final selectedProducto = productosFiltrados[selectedProductoIndex!];
+
+          final resultado = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EditProductosScreen(
+                producto: selectedProducto,
+              ),
+            ),
+          );
+
+          if (resultado == true) {
+            setState(() {
+              selectedProductoIndex = null;
+            });
+            await _cargarProductos();
+          }
+        },
+        backgroundColor: Colors.yellow[700],
+        label: const Text(
+          'Editar',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        icon: const Icon(Icons.edit, color: Colors.black),
+      )
+          : null,
     );
   }
 
@@ -207,167 +235,203 @@ class _InventarioScreenState extends State<InventarioScreen> {
     );
   }
 
-  Widget _buildProductCard(Producto producto) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _getStockColor(producto.stock),
-          width: 2,
-        ),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Imagen del producto (sin foto por ahora)
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+  Widget _buildProductCard(Producto producto, int index, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (selectedProductoIndex == index) {
+            selectedProductoIndex = null;
+          } else {
+            selectedProductoIndex = index;
+          }
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _getStockColor(producto.stock),
+            width: 2,
+          ),
+          boxShadow: isSelected
+              ? [
+            BoxShadow(
+              color: Colors.yellow[700]!.withOpacity(0.5),
+              blurRadius: 10,
+              spreadRadius: 2,
             ),
-            child: Center(
-              child: Icon(
-                Icons.inventory_2,
-                size: 40,
-                color: Colors.grey[400],
+          ]
+              : null,
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: producto.rutaImagenProductos != null &&
+                  producto.rutaImagenProductos!.isNotEmpty
+                  ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  producto.rutaImagenProductos!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Icon(
+                        Icons.inventory_2,
+                        size: 40,
+                        color: Colors.grey[400],
+                      ),
+                    );
+                  },
+                ),
+              )
+                  : Center(
+                child: Icon(
+                  Icons.inventory_2,
+                  size: 40,
+                  color: Colors.grey[400],
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Información del producto
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  producto.nombre ?? 'Sin nombre',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    producto.nombre ?? 'Sin nombre',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Código del producto',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 11,
+                  const SizedBox(height: 8),
+                  Text(
+                    'Código del producto',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 11,
+                    ),
                   ),
-                ),
-                Text(
-                  producto.codigoPersonal ?? 'Sin código',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
+                  Text(
+                    producto.codigoPersonal ?? 'Sin código',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Costo:',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 11,
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Costo:',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '\$${producto.costo?.toStringAsFixed(2) ?? '0.00'}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                            Text(
+                              '\$${producto.costo?.toStringAsFixed(2) ?? '0.00'}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'PVP:',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 11,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'PVP:',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '\$${producto.pvp?.toStringAsFixed(2) ?? '0.00'}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                            Text(
+                              '\$${producto.pvp?.toStringAsFixed(2) ?? '0.00'}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Stock:',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 11,
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Stock:',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${producto.stock ?? 0} unidades',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
+                            Text(
+                              '${producto.stock ?? 0} unidades',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Fecha:',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 11,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Fecha:',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                          Text(
-                            producto.fechaRegistro ?? 'Sin fecha',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
+                            Text(
+                              producto.fechaRegistro ?? 'Sin fecha',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
