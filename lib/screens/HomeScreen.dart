@@ -3,6 +3,7 @@ import 'package:motos_app/screens/ViewProfileScreen.dart';
 import '../services/auth_service.dart';
 import '../utils/token_manager.dart';
 import 'dart:convert';
+import '../screens/InventarioScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  int _selectedCardIndex = -1;
   String nombreUsuario = "";
 
   @override
@@ -125,22 +127,49 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 20,
           mainAxisSpacing: 20,
-          children: [
-            _DashboardCard(
-                icon: Icons.list_alt, label: 'Órdenes', onTap: () {}),
-            _DashboardCard(
-                icon: Icons.inventory, label: 'Inventario', onTap: () {}),
-            _DashboardCard(
+            children: [
+              _DashboardCard(
+                icon: Icons.list_alt,
+                label: 'Órdenes',
+                selected: _selectedCardIndex == 0,
+                onTap: () => setState(() => _selectedCardIndex = 0),
+              ),
+              _DashboardCard(
+                icon: Icons.inventory,
+                label: 'Inventario',
+                selected: _selectedCardIndex == 1,
+                onTap: () {
+                  setState(() => _selectedCardIndex = 1);
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const InventarioScreen(),
+                    ),
+                  ).then((_) {
+                    setState(() => _selectedCardIndex = -1);
+                  });
+                },
+              ),
+              _DashboardCard(
                 icon: Icons.notifications,
                 label: 'Reservas',
-                onTap: () {}),
-            _DashboardCard(
+                selected: _selectedCardIndex == 2,
+                onTap: () => setState(() => _selectedCardIndex = 2),
+              ),
+              _DashboardCard(
                 icon: Icons.motorcycle,
                 label: 'Mantenimientos',
-                onTap: () {}),
-            _DashboardCard(
-                icon: Icons.person, label: 'Usuarios', onTap: () {}),
-          ],
+                selected: _selectedCardIndex == 3,
+                onTap: () => setState(() => _selectedCardIndex = 3),
+              ),
+              _DashboardCard(
+                icon: Icons.person,
+                label: 'Usuarios',
+                selected: _selectedCardIndex == 4,
+                onTap: () => setState(() => _selectedCardIndex = 4),
+              ),
+            ],
         ),
       )
           : const SizedBox(),
@@ -174,22 +203,30 @@ class _DashboardCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool selected;
 
   const _DashboardCard({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.selected = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[850],
-          borderRadius: BorderRadius.circular(12),
-        ),
+      child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: Colors.grey[850],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? Colors.yellow : Colors.transparent,
+              width: 3,
+            ),
+          ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
