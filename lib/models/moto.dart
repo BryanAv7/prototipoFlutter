@@ -23,6 +23,7 @@ class Moto {
     this.ruta_imagenMotos,
   });
 
+  // ✅ fromJson - Lee snake_case del backend
   factory Moto.fromJson(Map<String, dynamic> json) {
     print('🔍 JSON recibido: $json');
 
@@ -40,6 +41,7 @@ class Moto {
     );
   }
 
+  // ✅ toJson - Envía snake_case al backend
   Map<String, dynamic> toJson() {
     return {
       'idMoto': id_moto,
@@ -47,11 +49,17 @@ class Moto {
       'anio': anio,
       'marca': marca,
       'modelo': modelo,
-      'tipoMoto': tipoMoto,
       'kilometraje': kilometraje,
       'cilindraje': cilindraje,
-      'id_usuario': id_usuario,
-      'ruta_imagenMotos': ruta_imagenMotos,
+      'ruta_imagenMotos': ruta_imagenMotos,  // Backend usa mixed case
+      'tipoMoto': tipoMoto,        // Backend usa camelCase
+      'id_usuario': id_usuario,     // Backend espera snake_case
     };
+  }
+
+  // ✅ EXTRA: toString para debugging
+  @override
+  String toString() {
+    return 'Moto(id: $id_moto, placa: $placa, marca: $marca, modelo: $modelo, usuario: $id_usuario)';
   }
 }
