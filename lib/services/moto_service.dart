@@ -121,7 +121,9 @@ class MotoService {
     final url = Uri.parse('${ApiConfig.baseUrl}/motos/${motoActualizada.id_moto}');
 
     final token = await TokenManager.getToken();
-    if (token == null) return null;
+    if (token == null) {
+      return null;
+    }
 
     try {
       final response = await http.put(
@@ -137,6 +139,7 @@ class MotoService {
         return Moto.fromJson(jsonDecode(response.body));
       }
       return null;
+
     } catch (e) {
       return null;
     }

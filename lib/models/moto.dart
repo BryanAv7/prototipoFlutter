@@ -12,20 +12,22 @@ class Moto {
 
   Moto({
     this.id_moto,
-    required this.placa,
-    required this.anio,
-    required this.marca,
-    required this.modelo,
-    required this.tipoMoto,
-    required this.kilometraje,
-    required this.cilindraje,
-    required this.id_usuario,
-    required this.ruta_imagenMotos,
+    this.placa,
+    this.anio,
+    this.marca,
+    this.modelo,
+    this.tipoMoto,
+    this.kilometraje,
+    this.cilindraje,
+    this.id_usuario,
+    this.ruta_imagenMotos,
   });
 
   factory Moto.fromJson(Map<String, dynamic> json) {
+    print('🔍 JSON recibido: $json');
+
     return Moto(
-      id_moto: json['id_moto'],
+      id_moto: json['idMoto'],
       placa: json['placa'],
       anio: json['anio'],
       marca: json['marca'],
@@ -40,7 +42,7 @@ class Moto {
 
   Map<String, dynamic> toJson() {
     return {
-      'id_moto': id_moto,
+      'idMoto': id_moto,
       'placa': placa,
       'anio': anio,
       'marca': marca,
