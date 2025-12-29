@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:motos_app/screens/ViewProfileScreen.dart';
+import 'package:motos_app/screens/MantenimientosScreen.dart';
 import '../services/auth_service.dart';
 import '../utils/token_manager.dart';
 import 'dart:convert';
@@ -158,11 +159,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => setState(() => _selectedCardIndex = 2),
               ),
               _DashboardCard(
-                icon: Icons.motorcycle,
-                label: 'Mantenimientos',
-                selected: _selectedCardIndex == 3,
-                onTap: () => setState(() => _selectedCardIndex = 3),
-              ),
+  icon: Icons.motorcycle,
+  label: 'Mantenimientos',
+  selected: _selectedCardIndex == 3,
+  onTap: () {
+    setState(() => _selectedCardIndex = 3); // ✅ Marca como seleccionado
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MantenimientosPage(),
+      ),
+    ); // ✅ Navega a la página
+  },
+),
               _DashboardCard(
                 icon: Icons.person,
                 label: 'Usuarios',
