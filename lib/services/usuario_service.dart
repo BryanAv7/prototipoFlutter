@@ -78,4 +78,51 @@ class UsuarioService {
       throw Exception('Error al subir imagen');
     }
   }
+
+  // =====================================================
+  // OBTENER TODOS LOS USUARIOS (GET /api/usuarios)
+  // =====================================================
+  static Future<List<Usuario>> obtenerUsuarios() async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/usuarios');
+    //final uri = _buildUrl('/usuarios'); // → .../api/usuarios
+
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Authorization': 'Bearer ...' si es necesario
+        },
+      );
+
+      print("[UsuariosService] OBTENER USUARIOS → ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Usuario.fromJson(json)).toList();
+      } else {
+        final errorMsg = _extraerMensajeError(response);
+        throw Exception('Error al cargar usuarios: ${response.statusCode} - $errorMsg');
+      }
+    } catch (e) {
+      throw Exception('Error de red o parsing: $e');
+    }
+  }
+
+  // =====================================================
+  // UTILIDAD: Extraer mensaje de error del cuerpo o usar razón estándar
+  // =====================================================
+  static String _extraerMensajeError(http.Response response) {
+    try {
+      final body = json.decode(response.body);
+      return body['mensaje'] ??
+          body['error'] ??
+          body['message'] ??
+          response.reasonPhrase ??
+          'Error desconocido';
+    } catch (_) {
+      return response.reasonPhrase ?? 'Error desconocido';
+    }
+  }
+
 }
