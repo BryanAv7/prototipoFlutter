@@ -50,12 +50,17 @@ class ProductoSearchItem extends StatelessWidget {
   }
 
   Widget _buildImagen() {
-    if (producto.rutaImagenProductos != null &&
-        producto.rutaImagenProductos!.isNotEmpty) {
+    final ruta = producto.rutaImagenProductos;
+
+    if (ruta != null && ruta.isNotEmpty) {
+      final imageUrl = ruta.startsWith('http')
+          ? ruta
+          : '${ApiConfig.baseUrl}$ruta';
+
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Image.network(
-          '${ApiConfig.baseUrl}${producto.rutaImagenProductos}',
+          imageUrl,
           width: 50,
           height: 50,
           fit: BoxFit.cover,
@@ -63,6 +68,7 @@ class ProductoSearchItem extends StatelessWidget {
         ),
       );
     }
+
     return _buildIconoDefault();
   }
 

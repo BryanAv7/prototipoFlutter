@@ -143,11 +143,17 @@ class DetalleItemCard extends StatelessWidget {
   }
 
   Widget _buildImagen() {
-    if (detalle.esProducto && detalle.imagenUrl != null && detalle.imagenUrl!.isNotEmpty) {
+    final ruta = detalle.imagenUrl;
+
+    if (detalle.esProducto && ruta != null && ruta.isNotEmpty) {
+      final imageUrl = ruta.startsWith('http')
+          ? ruta
+          : '${ApiConfig.baseUrl}$ruta';
+
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Image.network(
-          '${ApiConfig.baseUrl}${detalle.imagenUrl}',
+          imageUrl,
           width: 60,
           height: 60,
           fit: BoxFit.cover,
@@ -155,6 +161,7 @@ class DetalleItemCard extends StatelessWidget {
         ),
       );
     }
+
     return _buildIconoDefault();
   }
 

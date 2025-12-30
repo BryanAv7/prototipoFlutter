@@ -14,7 +14,9 @@ class ProductoService {
     final url = Uri.parse('${ApiConfig.baseUrl}/productos');
 
     final token = await TokenManager.getToken();
-    if (token == null) return [];
+    if (token == null) {
+      return [];
+    }
 
     try {
       final response = await http.get(
@@ -28,9 +30,9 @@ class ProductoService {
         final List<dynamic> list = jsonDecode(response.body);
         return list.map((item) => Producto.fromJson(item)).toList();
       }
+
       return [];
-    } catch (e) {
-      print('Error al listar productos: $e');
+    } catch (_) {
       return [];
     }
   }

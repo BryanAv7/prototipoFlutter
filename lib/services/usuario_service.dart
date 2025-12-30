@@ -84,14 +84,20 @@ class UsuarioService {
   // =====================================================
   static Future<List<Usuario>> obtenerUsuarios() async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/usuarios');
-    //final uri = _buildUrl('/usuarios'); // → .../api/usuarios
+
+    // OBTENER TOKEN
+    final token = await TokenManager.getToken();
+    if (token == null) {
+      print('No hay token disponible');
+      throw Exception("No hay token de autenticación");
+    }
 
     try {
       final response = await http.get(
         uri,
         headers: {
           'Content-Type': 'application/json',
-          // 'Authorization': 'Bearer ...' si es necesario
+          'Authorization': 'Bearer $token',
         },
       );
 

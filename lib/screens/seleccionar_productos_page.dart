@@ -33,7 +33,7 @@ class _SeleccionarProductosPageState extends State<SeleccionarProductosPage> {
     super.initState();
     detallesSeleccionados = List.from(widget.detallesIniciales);
     _cargarProductos();
-    _testServicio(); // ⬅️ AGREGA ESTO TEMPORALMENTE
+    _testServicio();
   }
 
   @override
@@ -44,47 +44,47 @@ class _SeleccionarProductosPageState extends State<SeleccionarProductosPage> {
 
   // ---------------- CARGAR PRODUCTOS ----------------
   Future<void> _cargarProductos() async {
-    print('🔵 Iniciando carga de productos...');
+    //print(' Iniciando carga de productos...');
     setState(() => cargandoProductos = true);
 
     try {
       final productos = await ProductoService.listarProductos();
-      print('✅ Productos obtenidos: ${productos.length}');
+      //print(' Productos obtenidos: ${productos.length}');
 
       setState(() {
         todosLosProductos = productos;
         productosFiltrados = productos;
       });
 
-      print('✅ Estado actualizado con ${todosLosProductos.length} productos');
+      //print(' Estado actualizado con ${todosLosProductos.length} productos');
     } catch (e) {
-      print('❌ Error al cargar productos: $e');
+      //print(' Error al cargar productos: $e');
       _mostrarError('Error al cargar productos: $e');
     } finally {
       setState(() => cargandoProductos = false);
-      print('🔵 Carga finalizada. cargandoProductos = false');
+      //print(' Carga finalizada. cargandoProductos = false');
     }
   }
 
   //------TEST
   Future<void> _testServicio() async {
-    print('🧪 TEST: Verificando servicio de productos...');
+    //print('TEST: Verificando servicio de productos...');
 
     try {
       final productos = await ProductoService.listarProductos();
-      print('🧪 TEST: Productos recibidos: ${productos.length}');
+      //print('TEST: Productos recibidos: ${productos.length}');
 
       if (productos.isEmpty) {
-        print('⚠️ TEST: Lista vacía - posibles causas:');
+        print(' TEST: Lista vacía - posibles causas:');
         print('   1. No hay productos en BD');
         print('   2. Token inválido');
         print('   3. URL incorrecta');
         print('   4. Backend no está corriendo');
       } else {
-        print('✅ TEST: Primer producto: ${productos.first.nombre}');
+        //print(' TEST: Primer producto: ${productos.first.nombre}');
       }
     } catch (e) {
-      print('❌ TEST ERROR: $e');
+      print(' TEST ERROR: $e');
     }
   }
 

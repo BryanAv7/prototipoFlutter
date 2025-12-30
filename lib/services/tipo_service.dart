@@ -1,27 +1,34 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../config/api.dart'; // 👈 Importa ApiConfig
+import '../config/api.dart';
 import '../models/Tipo.dart';
+import '../utils/token_manager.dart';
 
 class TipoService {
-  // ✅ Usa ApiConfig para construir URLs dinámicamente
   static Uri _buildUrl(String path) => Uri.parse('${ApiConfig.baseUrl}/tipos$path');
 
   // =====================================================
   // OBTENER TODOS LOS TIPOS (GET /api/tipos)
   // =====================================================
   static Future<List<Tipo>> obtenerTodos() async {
-    final uri = _buildUrl(''); // → .../api/tipos
+    final uri = _buildUrl('');
+
+    // OBTENER TOKEN
+    final token = await TokenManager.getToken();
+    if (token == null) {
+      print('No hay token disponible');
+      throw Exception("No hay token de autenticación");
+    }
 
     final response = await http.get(
       uri,
       headers: {
         'Content-Type': 'application/json',
-        // 'Authorization': 'Bearer ...' si aplica
+        'Authorization': 'Bearer $token',
       },
     );
 
-    print('[TipoService] OBTENER TODOS → ${response.statusCode}');
+    //print('[TipoService] OBTENER TODOS → ${response.statusCode}');
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -36,12 +43,20 @@ class TipoService {
   // OBTENER TIPO POR ID (GET /api/tipos/{id})
   // =====================================================
   static Future<Tipo?> obtenerPorId(int id) async {
-    final uri = _buildUrl('/$id'); // → .../api/tipos/123
+    final uri = _buildUrl('/$id');
+
+    // OBTENER TOKEN
+    final token = await TokenManager.getToken();
+    if (token == null) {
+      print('No hay token disponible');
+      return null;
+    }
 
     final response = await http.get(
       uri,
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
       },
     );
 
@@ -50,7 +65,7 @@ class TipoService {
     if (response.statusCode == 200) {
       return Tipo.fromJson(json.decode(response.body));
     } else if (response.statusCode == 404) {
-      return null; // comportamiento idempotente y claro
+      return null;
     } else {
       final errorMsg = _extraerMensajeError(response);
       throw Exception('Error al obtener tipo $id: ${response.statusCode} - $errorMsg');

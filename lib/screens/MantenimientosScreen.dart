@@ -20,204 +20,520 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
     registrosFuture = RegistrosService.listarRegistros();
   }
 
+  void _recargarLista() {
+    setState(() {
+      registrosFuture = RegistrosService.listarRegistros();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFD700),
-        automaticallyImplyLeading: false,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           "Mantenimientos",
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.normal,
+            fontSize: 22,
+          ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black),
+            onPressed: _recargarLista,
+            tooltip: 'Actualizar',
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // BOTONES
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _actionButton("Listar", () {
-                  setState(() {
-                    registrosFuture = RegistrosService.listarRegistros();
-                  });
-                }),
-                _actionButton("+ Agregar", () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AgregarMantenimientoPage(),
+      body: Column(
+        children: [
+          // Header con estadísticas
+          _buildHeaderStats(),
+
+          // Lista de mantenimientos
+          Expanded(
+            child: FutureBuilder<List<RegistroDTO>>(
+              future: registrosFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        CircularProgressIndicator(
+                          color: Color(0xFFFFD700),
+                          strokeWidth: 3,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Cargando mantenimientos...',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   );
-                }),
-              ],
-            ),
+                }
 
-            const SizedBox(height: 20),
-
-            // LISTA
-            Expanded(
-              child: FutureBuilder<List<RegistroDTO>>(
-                future: registrosFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        "Error: ${snapshot.error}",
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    );
-                  }
-
-                  final registros = snapshot.data!;
-
-                  if (registros.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        "No hay mantenimientos",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: registros.length,
-                    itemBuilder: (context, index) {
-                      return _buildCard(context, registros[index]);
-                    },
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Error al cargar datos",
+                          style: TextStyle(
+                            color: Colors.red.shade400,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "${snapshot.error}",
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _recargarLista,
+                          icon: const Icon(Icons.refresh, color: Colors.black),
+                          label: const Text(
+                            'Reintentar',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                }
 
-  // --------------------------------------------------
-  Widget _actionButton(String text, VoidCallback onPressed) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
+                final registros = snapshot.data!;
+
+                if (registros.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 80,
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "No hay mantenimientos registrados",
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          "Presiona el botón + para agregar uno",
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  itemCount: registros.length,
+                  itemBuilder: (context, index) {
+                    return _buildCard(context, registros[index], index);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final resultado = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AgregarMantenimientoPage(),
+            ),
+          );
+          if (resultado == true) {
+            _recargarLista();
+          }
+        },
         backgroundColor: const Color(0xFFFFD700),
-        foregroundColor: Colors.black,
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+        icon: const Icon(Icons.add, color: Colors.black),
+        label: const Text(
+          'Agregar',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
         ),
       ),
-      onPressed: onPressed,
-      child: Text(text),
     );
   }
 
-  // --------------------------------------------------
-  Widget _buildCard(BuildContext context, RegistroDTO registro) {
-    final bool enProceso = registro.estado == 1;
+  Widget _buildHeaderStats() {
+    return FutureBuilder<List<RegistroDTO>>(
+      future: registrosFuture,
+      builder: (context, snapshot) {
+        final registros = snapshot.data ?? [];
+        final enProceso = registros.where((r) => r.estado == 1).length;
+        final finalizados = registros.where((r) => r.estado != 1).length;
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => DetalleMantenimientoPage(
-              idRegistro: registro.idRegistro,
+        return Container(
+          margin: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFFFFD700).withOpacity(0.2),
+                const Color(0xFFFFD700).withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFFFD700).withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem(
+                icon: Icons.format_list_bulleted,
+                label: 'Total',
+                value: '${registros.length}',
+                color: const Color(0xFFFFD700),
+              ),
+              Container(
+                height: 40,
+                width: 1,
+                color: Colors.white24,
+              ),
+              _buildStatItem(
+                icon: Icons.pending_actions,
+                label: 'En Proceso',
+                value: '$enProceso',
+                color: Colors.green,
+              ),
+              Container(
+                height: 40,
+                width: 1,
+                color: Colors.white24,
+              ),
+              _buildStatItem(
+                icon: Icons.check_circle,
+                label: 'Finalizados',
+                value: '$finalizados',
+                color: Colors.blue,
+              ),
+            ],
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2B2B2B),
-          borderRadius: BorderRadius.circular(12),
+    );
+  }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        child: Row(
-          children: [
-            // IMAGEN
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                registro.rutaImagenMoto,
-                width: 120,
-                height: 90,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.motorcycle,
-                  size: 80,
-                  color: Colors.white,
-                ),
-              ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard(BuildContext context, RegistroDTO registro, int index) {
+    final bool enProceso = registro.estado == 1;
+
+    return Hero(
+      tag: 'registro_${registro.idRegistro}',
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: enProceso
+                ? Colors.green.withOpacity(0.3)
+                : Colors.blue.withOpacity(0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-
-            const SizedBox(width: 10),
-
-            // INFO
-            Expanded(
-              child: Column(
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DetalleMantenimientoPage(
+                    idRegistro: registro.idRegistro,
+                  ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "${registro.nombreCliente}, ${registro.marcaMoto} - ${registro.modeloMoto}",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-
-                  const SizedBox(height: 5),
-
-                  Text(
-                    "Fecha: ${registro.fecha}",
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-
-                  Text(
-                    registro.descripcion,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: enProceso ? Colors.green : Colors.yellow,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        enProceso ? "En Proceso" : "Finalizado",
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
+                  // Imagen con badge de número
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          color: Colors.grey[800],
+                          child: registro.rutaImagenMoto.isNotEmpty
+                              ? Image.network(
+                            registro.rutaImagenMoto,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Icons.motorcycle,
+                              size: 50,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
+                          )
+                              : Icon(
+                            Icons.motorcycle,
+                            size: 50,
+                            color: Colors.white.withOpacity(0.3),
+                          ),
                         ),
                       ),
+                      Positioned(
+                        top: 6,
+                        left: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD700),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '#${(index + 1).toString().padLeft(3, '0')}',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Información
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Cliente y moto
+                        Text(
+                          registro.nombreCliente,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.motorcycle,
+                              size: 14,
+                              color: Color(0xFFFFD700),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                "${registro.marcaMoto} - ${registro.modeloMoto}",
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Fecha
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 12,
+                              color: Colors.white.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              registro.fecha,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+
+                        // Descripción
+                        Text(
+                          registro.descripcion,
+                          style: const TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Estado y flecha
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: enProceso
+                                    ? Colors.green.withOpacity(0.2)
+                                    : Colors.blue.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: enProceso
+                                      ? Colors.green.withOpacity(0.5)
+                                      : Colors.blue.withOpacity(0.5),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    enProceso
+                                        ? Icons.pending_actions
+                                        : Icons.check_circle,
+                                    size: 14,
+                                    color: enProceso
+                                        ? Colors.green
+                                        : Colors.blue,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    enProceso ? "En Proceso" : "Finalizado",
+                                    style: TextStyle(
+                                      color: enProceso
+                                          ? Colors.green
+                                          : Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: const Color(0xFFFFD700).withOpacity(0.5),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -1,15 +1,15 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import '../models/usuario.dart';
 import '../models/moto.dart';
 import '../models/Tipo.dart';
-import '../models/detalle_ui.dart'; // ⬅️ AGREGAR
+import '../models/detalle_ui.dart';
 import '../screens/BuscarUsuarioPage.dart';
 import '../services/moto_service.dart';
 import '../services/tipo_service.dart';
 import '../services/registros_service.dart';
-import '../screens/seleccionar_productos_page.dart'; // ⬅️ AGREGAR
+import '../screens/seleccionar_productos_page.dart';
+import '../utils/token_manager.dart';
 
 class AgregarMantenimientoPage extends StatefulWidget {
   const AgregarMantenimientoPage({super.key});
@@ -19,9 +19,7 @@ class AgregarMantenimientoPage extends StatefulWidget {
       _AgregarMantenimientoPageState();
 }
 
-class _AgregarMantenimientoPageState
-    extends State<AgregarMantenimientoPage> {
-
+class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
   // ---------------- FORM ----------------
   final _formKey = GlobalKey<FormState>();
   bool intentoGuardar = false;
@@ -33,43 +31,69 @@ class _AgregarMantenimientoPageState
 
   // ---------------- DATA ----------------
   int? idClienteSeleccionado;
-  int? idTipoSeleccionado; // ⬅️ CAMBIADO de String? tipoMantenimiento
-  List<DetalleUI> detallesSeleccionados = []; // ⬅️ AGREGAR
+  int? idTipoSeleccionado;
+  List<DetalleUI> detallesSeleccionados = [];
 
   // VEHÍCULO ----------------
   int? idMotoSeleccionada;
   List<Moto> motosCliente = [];
   bool cargandoMotos = false;
+
   // TIPOS ----------------
-  List<Tipo> tiposMantenimiento = []; // ⬅️ NUEVO
-  bool cargandoTipos = false; // ⬅️ NUEVO
+  List<Tipo> tiposMantenimiento = [];
+  bool cargandoTipos = false;
+
+  // NÚMERO DE REGISTRO
+  int numeroRegistroSiguiente = 0;
+  bool cargandoNumeroRegistro = true;
 
   @override
   void initState() {
     super.initState();
-    _cargarTipos(); // ⬅️ NUEVO: Cargar tipos al iniciar
+    _cargarTipos();
+    _cargarNumeroRegistro(); // Contador de Registros
   }
 
+  // Método para cargar número de registro
+  Future<void> _cargarNumeroRegistro() async {
+    try {
+      final registros = await RegistrosService.listarRegistros();
+      setState(() {
+        numeroRegistroSiguiente = registros.length + 1;
+        cargandoNumeroRegistro = false;
+      });
+    } catch (e) {
+      print('Error al obtener número de registro: $e');
+      setState(() {
+        numeroRegistroSiguiente = 1; // Default
+        cargandoNumeroRegistro = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E1E),
-
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFD700),
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Mantenimientos / Agregar",
-          style: TextStyle(color: Colors.black),
+          "Nuevo Mantenimiento",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.normal,
+            fontSize: 20,
+          ),
         ),
+        centerTitle: false,
       ),
-
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           autovalidateMode: intentoGuardar
@@ -78,45 +102,43 @@ class _AgregarMantenimientoPageState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _labelValue("Fecha:", "29/08/2025"),
-              _labelValue("# De Registro:", "0000000001"),
-              const SizedBox(height: 16),
+              // Header con información del registro
+              _buildHeaderCard(),
+              const SizedBox(height: 24),
 
-              // -------- CLIENTE --------
+              // Sección Cliente
+              _buildSectionTitle('Información del Cliente', Icons.person),
+              const SizedBox(height: 12),
               _searchClienteField(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
+              // Sección Vehículo
+              _buildSectionTitle('Vehículo', Icons.motorcycle),
+              const SizedBox(height: 12),
               _dropdownVehiculo(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
+              // Sección Tipo de Mantenimiento
+              _buildSectionTitle('Tipo de Servicio', Icons.build),
+              const SizedBox(height: 12),
               _dropdownTipo(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
+              // Sección Productos
+              _buildSectionTitle('Productos y Repuestos', Icons.shopping_cart),
+              const SizedBox(height: 12),
               _productsBox(),
+              const SizedBox(height: 20),
+
+              // Sección Observaciones
+              _buildSectionTitle('Observaciones', Icons.note_alt),
               const SizedBox(height: 12),
-
               _descriptionField(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 32),
 
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFD700),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 50, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                  onPressed: _validarAntesDeGuardar,
-                  child: const Text(
-                    "+ Guardar",
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
+              // Botón Guardar
+              _buildGuardarButton(),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -124,7 +146,610 @@ class _AgregarMantenimientoPageState
     );
   }
 
-  // ---------------- VALIDACIÓN ----------------
+  // ---------------- Diseño del Componente ----------------
+
+  Widget _buildHeaderCard() {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFFFD700).withOpacity(0.2),
+            const Color(0xFFFFD700).withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildInfoItem(
+                icon: Icons.calendar_today,
+                label: 'Fecha',
+                value: DateTime.now().toString().split(' ')[0],
+              ),
+              Container(
+                height: 40,
+                width: 1,
+                color: Colors.white24,
+              ),
+              _buildInfoItem(
+                icon: Icons.tag,
+                label: 'Registro',
+                value: cargandoNumeroRegistro
+                    ? '...'
+                    : '#${numeroRegistroSiguiente.toString().padLeft(8, '0')}', // ✅ CAMBIO AQUÍ
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: const Color(0xFFFFD700), size: 24),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFD700).withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xFFFFD700),
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _searchClienteField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: idClienteSeleccionado != null && intentoGuardar == false
+              ? const Color(0xFFFFD700).withOpacity(0.5)
+              : Colors.white24,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: clienteCtrl,
+              readOnly: true,
+              style: const TextStyle(color: Colors.white, fontSize: 15),
+              decoration: InputDecoration(
+                labelText: "Cliente",
+                labelStyle: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  Icons.person_outline,
+                  color: idClienteSeleccionado != null
+                      ? const Color(0xFFFFD700)
+                      : Colors.white54,
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+              validator: (_) {
+                if (idClienteSeleccionado == null) {
+                  return 'Seleccione un cliente';
+                }
+                return null;
+              },
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.search, color: Colors.black),
+              onPressed: _buscarCliente,
+              tooltip: 'Buscar cliente',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dropdownVehiculo() {
+    if (idClienteSeleccionado == null) {
+      return _campoBloqueado(
+        "Seleccione primero un cliente",
+        Icons.lock_outline,
+      );
+    }
+
+    if (cargandoMotos) {
+      return _buildLoadingField("Cargando vehículos...");
+    }
+
+    if (motosCliente.isEmpty) {
+      return _campoBloqueado(
+        "Este cliente no tiene vehículos registrados",
+        Icons.warning_amber,
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: idMotoSeleccionada != null
+              ? const Color(0xFFFFD700).withOpacity(0.5)
+              : Colors.white24,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<int>(
+        dropdownColor: const Color(0xFF2B2B2B),
+        style: const TextStyle(color: Colors.white, fontSize: 15),
+        decoration: InputDecoration(
+          labelText: "Vehículo (Placa)",
+          labelStyle: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.motorcycle,
+            color: idMotoSeleccionada != null
+                ? const Color(0xFFFFD700)
+                : Colors.white54,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+        ),
+        value: idMotoSeleccionada,
+        items: motosCliente.map((moto) {
+          return DropdownMenuItem(
+            value: moto.id_moto,
+            child: Text("${moto.placa} - ${moto.modelo}"),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() => idMotoSeleccionada = value);
+        },
+        validator: (value) => value == null ? 'Seleccione un vehículo' : null,
+      ),
+    );
+  }
+
+  Widget _dropdownTipo() {
+    if (cargandoTipos) {
+      return _buildLoadingField("Cargando tipos de servicio...");
+    }
+
+    if (tiposMantenimiento.isEmpty) {
+      return _campoBloqueado(
+        "No hay tipos de servicio disponibles",
+        Icons.warning_amber,
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: idTipoSeleccionado != null
+              ? const Color(0xFFFFD700).withOpacity(0.5)
+              : Colors.white24,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<int>(
+        dropdownColor: const Color(0xFF2B2B2B),
+        style: const TextStyle(color: Colors.white, fontSize: 15),
+        decoration: InputDecoration(
+          labelText: "Tipo de mantenimiento",
+          labelStyle: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.build_circle,
+            color: idTipoSeleccionado != null
+                ? const Color(0xFFFFD700)
+                : Colors.white54,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+        ),
+        value: idTipoSeleccionado,
+        items: tiposMantenimiento.map((tipo) {
+          return DropdownMenuItem<int>(
+            value: tipo.idTipo,
+            child: Text(tipo.nombre),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() => idTipoSeleccionado = value);
+        },
+        validator: (value) =>
+        value == null ? 'Seleccione un tipo de mantenimiento' : null,
+      ),
+    );
+  }
+
+  Widget _productsBox() {
+    final bool hayDetalles = detallesSeleccionados.isNotEmpty;
+    final bool error = intentoGuardar && !hayDetalles;
+
+    return GestureDetector(
+      onTap: () async {
+        final resultado = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SeleccionarProductosPage(
+              detallesIniciales: detallesSeleccionados,
+            ),
+          ),
+        );
+
+        if (resultado != null && resultado is List<DetalleUI>) {
+          setState(() {
+            detallesSeleccionados = resultado;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: error
+                ? Colors.red.withOpacity(0.8)
+                : hayDetalles
+                ? const Color(0xFFFFD700).withOpacity(0.5)
+                : Colors.white24,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD700).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        hayDetalles ? Icons.check_circle : Icons.add_shopping_cart,
+                        color: const Color(0xFFFFD700),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      hayDetalles
+                          ? "Productos (${detallesSeleccionados.length})"
+                          : "Seleccionar productos",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: const Color(0xFFFFD700),
+                  size: 16,
+                ),
+              ],
+            ),
+            if (hayDetalles) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Total:",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      "\$${_calcularTotal().toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        color: Color(0xFFFFD700),
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (error) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Debe seleccionar al menos un producto',
+                    style: TextStyle(
+                      color: Colors.red.shade300,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _descriptionField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: descripcionCtrl,
+        maxLines: 5,
+        style: const TextStyle(color: Colors.white, fontSize: 15),
+        decoration: InputDecoration(
+          labelText: "Observaciones adicionales",
+          labelStyle: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 14,
+          ),
+          hintText: "Describe los detalles del servicio...",
+          hintStyle: TextStyle(
+            color: Colors.white.withOpacity(0.3),
+            fontSize: 14,
+          ),
+          prefixIcon: const Padding(
+            padding: EdgeInsets.only(bottom: 60),
+            child: Icon(Icons.description, color: Colors.white54),
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuardarButton() {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFD700), Color(0xFFFFC107)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        onPressed: _validarAntesDeGuardar,
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "Guardar Mantenimiento",
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _campoBloqueado(String texto, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white12,
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white38, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              texto,
+              style: const TextStyle(
+                color: Colors.white38,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingField(String texto) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            texto,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------- VALIDACIÓN Y GUARDADO ----------------
 
   void _validarAntesDeGuardar() {
     setState(() => intentoGuardar = true);
@@ -133,21 +758,49 @@ class _AgregarMantenimientoPageState
 
     if (idClienteSeleccionado == null ||
         idTipoSeleccionado == null ||
-        detallesSeleccionados.isEmpty || // ⬅️ CAMBIAR AQUÍ
+        detallesSeleccionados.isEmpty ||
         !formValido) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Complete los campos obligatorios"),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "Complete todos los campos obligatorios",
+                  style: TextStyle(fontSize: 15),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
     }
     if (idMotoSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Debe seleccionar un vehículo"),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.white),
+              SizedBox(width: 12),
+              Text(
+                "Debe seleccionar un vehículo",
+                style: TextStyle(fontSize: 15),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -160,10 +813,33 @@ class _AgregarMantenimientoPageState
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF2B2B2B),
-        title: const Text(
-          "Confirmación",
-          style: TextStyle(color: Colors.white),
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.check_circle_outline,
+                color: Color(0xFFFFD700),
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              "Confirmar",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -171,15 +847,40 @@ class _AgregarMantenimientoPageState
           children: [
             const Text(
               "¿Está seguro de guardar este mantenimiento?",
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 15,
+              ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              "Total: \$${_calcularTotal().toStringAsFixed(2)}",
-              style: const TextStyle(
-                color: Colors.yellow,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFFFD700).withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Total:",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    "\$${_calcularTotal().toStringAsFixed(2)}",
+                    style: const TextStyle(
+                      color: Color(0xFFFFD700),
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -187,16 +888,37 @@ class _AgregarMantenimientoPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancelar",
-                style: TextStyle(color: Colors.white)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              "Cancelar",
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // Cerrar diálogo
+              Navigator.pop(context);
               await _guardarMantenimiento();
             },
-            child: const Text("Aceptar",
-                style: TextStyle(color: Colors.yellow)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              "Confirmar",
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -204,20 +926,61 @@ class _AgregarMantenimientoPageState
   }
 
   Future<void> _guardarMantenimiento() async {
+    // Mostrar loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              CircularProgressIndicator(
+                color: Color(0xFFFFD700),
+                strokeWidth: 3,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Guardando mantenimiento...',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
     try {
+      // Obtener el usuario actual del token
+      final userJson = await TokenManager.getUserJson();
+      final idUsuarioActual = userJson?['id_usuario'];
+
+      if (idUsuarioActual == null) {
+        Navigator.pop(context);
+        _mostrarError("No se pudo obtener el usuario actual");
+        return;
+      }
+
       final body = {
         "idCliente": idClienteSeleccionado,
-        "idEncargado": 2, // Por ahora manual
+        "idEncargado": idUsuarioActual,
         "idMoto": idMotoSeleccionada,
         "idTipo": idTipoSeleccionado,
         "estado": 1,
         "observaciones": descripcionCtrl.text.trim(),
-        "detalles": detallesSeleccionados
-            .map((detalle) => detalle.toJson())
-            .toList(),
+        "detalles":
+        detallesSeleccionados.map((detalle) => detalle.toJson()).toList(),
       };
 
-      print('JSON a enviar: ${jsonEncode(body)}'); // Para debugging
+      print('JSON a enviar: ${jsonEncode(body)}');
 
       final resultado = await RegistrosService.crear(body);
 
@@ -225,10 +988,25 @@ class _AgregarMantenimientoPageState
 
       if (resultado != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Mantenimiento guardado exitosamente"),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 24),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Mantenimiento guardado exitosamente",
+                    style: TextStyle(fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
 
@@ -247,41 +1025,29 @@ class _AgregarMantenimientoPageState
   void _mostrarError(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(mensaje),
-        backgroundColor: Colors.red,
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                mensaje,
+                style: const TextStyle(fontSize: 15),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  // ---------------- COMPONENTES ----------------
-
-  /// CLIENTE (bloqueado + búsqueda)
-  Widget _searchClienteField() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextFormField(
-            controller: clienteCtrl,
-            readOnly: true,
-            style: const TextStyle(color: Colors.white),
-            decoration: _inputDecoration("Cliente"),
-            validator: (_) {
-              if (idClienteSeleccionado == null) {
-                return 'Seleccione un cliente';
-              }
-              return null;
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.search, color: Colors.yellow),
-          onPressed: _buscarCliente,
-        ),
-      ],
-    );
-  }
+  // ---------------- LÓGICA DE NEGOCIO ----------------
 
   Future<void> _buscarCliente() async {
     print('🔍 Iniciando búsqueda de cliente...');
@@ -314,55 +1080,26 @@ class _AgregarMantenimientoPageState
       });
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Error al cargar vehículos"),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Text("Error al cargar vehículos"),
+            ],
+          ),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     } finally {
       setState(() => cargandoMotos = false);
     }
   }
-  Widget _campoBloqueado(String texto) {
-    return TextFormField(
-      enabled: false,
-      decoration: _inputDecoration(texto),
-    );
-  }
 
-  Widget _dropdownVehiculo() {
-    if (idClienteSeleccionado == null) {
-      return _campoBloqueado("Seleccione primero un cliente");
-    }
-
-    if (cargandoMotos) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (motosCliente.isEmpty) {
-      return _campoBloqueado("Este cliente no tiene vehículos");
-    }
-
-    return DropdownButtonFormField<int>(
-      dropdownColor: const Color(0xFF2B2B2B),
-      style: const TextStyle(color: Colors.white),
-      decoration: _inputDecoration("Vehículo (Placa)"),
-      value: idMotoSeleccionada,
-      items: motosCliente.map((moto) {
-        return DropdownMenuItem(
-          value: moto.id_moto,
-          child: Text("${moto.placa} - ${moto.modelo}"),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() => idMotoSeleccionada = value);
-      },
-      validator: (value) =>
-      value == null ? 'Seleccione un vehículo' : null,
-    );
-  }
-
-  // ⬅️ NUEVO: Método para cargar tipos
   Future<void> _cargarTipos() async {
     setState(() => cargandoTipos = true);
     try {
@@ -373,130 +1110,23 @@ class _AgregarMantenimientoPageState
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Error al cargar tipos: $e"),
-          backgroundColor: Colors.red,
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text("Error al cargar tipos: $e")),
+            ],
+          ),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     } finally {
       setState(() => cargandoTipos = false);
     }
-  }
-
-  Widget _dropdownTipo() {
-    if (cargandoTipos) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.yellow),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow),
-              ),
-            ),
-            SizedBox(width: 12),
-            Text(
-              "Cargando tipos...",
-              style: TextStyle(color: Colors.white70),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (tiposMantenimiento.isEmpty) {
-      return _campoBloqueado("No hay tipos disponibles");
-    }
-
-    return DropdownButtonFormField<int>(
-      dropdownColor: const Color(0xFF2B2B2B),
-      style: const TextStyle(color: Colors.white),
-      decoration: _inputDecoration("Tipo de mantenimiento"),
-      value: idTipoSeleccionado,
-      items: tiposMantenimiento.map((tipo) {
-        return DropdownMenuItem<int>(
-          value: tipo.idTipo,
-          child: Text(tipo.nombre),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() => idTipoSeleccionado = value);
-      },
-      validator: (value) =>
-      value == null ? 'Seleccione un tipo de mantenimiento' : null,
-    );
-  }
-
-  Widget _productsBox() {
-    final bool hayDetalles = detallesSeleccionados.isNotEmpty;
-    final bool error = intentoGuardar && !hayDetalles;
-
-    return GestureDetector(
-      onTap: () async {
-        final resultado = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SeleccionarProductosPage(
-              detallesIniciales: detallesSeleccionados,
-            ),
-          ),
-        );
-
-        if (resultado != null && resultado is List<DetalleUI>) {
-          setState(() {
-            detallesSeleccionados = resultado;
-          });
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: error ? Colors.red : Colors.yellow,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  hayDetalles
-                      ? "Productos (${detallesSeleccionados.length})"
-                      : "Productos:",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-                const Icon(Icons.arrow_forward_ios,
-                    color: Colors.yellow, size: 16),
-              ],
-            ),
-            if (hayDetalles) ...[
-              const SizedBox(height: 8),
-              Text(
-                "Total: \$${_calcularTotal().toStringAsFixed(2)}",
-                style: const TextStyle(
-                  color: Colors.yellow,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 
   double _calcularTotal() {
@@ -505,49 +1135,4 @@ class _AgregarMantenimientoPageState
           (sum, detalle) => sum + detalle.subtotal,
     );
   }
-  Widget _descriptionField() {
-    return TextField(
-      controller: descripcionCtrl,
-      maxLines: 4,
-      style: const TextStyle(color: Colors.white),
-      decoration: _inputDecoration("Descripción"),
-    );
-  }
-
-  Widget _labelValue(String label, String value) {
-    return Row(
-      children: [
-        Text(label, style: _labelStyle()),
-        const SizedBox(width: 8),
-        Text(value, style: _valueStyle()),
-      ],
-    );
-  }
-
-  // ---------------- ESTILOS ----------------
-
-  InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.white70),
-      enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.yellow),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.yellow, width: 2),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.red),
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
-
-  TextStyle _labelStyle() =>
-      const TextStyle(color: Colors.white70, fontSize: 14);
-
-  TextStyle _valueStyle() =>
-      const TextStyle(color: Colors.white, fontSize: 14);
 }
