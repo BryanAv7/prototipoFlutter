@@ -114,6 +114,56 @@ class MotoService {
     }
   }
 
+
+// Buscar dueño por placa usando OCR
+  static Future<Map<String, dynamic>?> buscarDuenoPorPlaca(File imageFile) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/motos/ocr/buscar-dueno');
+
+    final request = http.MultipartRequest('POST', url);
+    request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
+
+    final token = await TokenManager.getToken();
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    try {
+      //print('📤 Enviando imagen para buscar dueño...');
+      final response = await request.send();
+      final respStr = await response.stream.bytesToString();
+
+      //print('Response buscarDuenoPorPlaca: $respStr');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(respStr);
+
+        if (data['success'] == true) {
+          //print('Cliente encontrado: ${data['nombreCompleto']}');
+          return {
+            'success': true,
+            'idUsuario': data['idUsuario'],
+            'nombreCompleto': data['nombreCompleto'],
+            'idMoto': data['idMoto'],
+            'placa': data['placa'],
+            'modelo': data['modelo'],
+            'marca': data['marca'],
+          };
+        } else {
+          //print(' ${data['mensaje']}');
+          return {
+            'success': false,
+            'mensaje': data['mensaje'] ?? 'No se encontró el vehículo',
+            'placa': data['placa'],
+          };
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error en buscarDuenoPorPlaca: $e');
+      return null;
+    }
+  }
+
   // =========================
   // Actualizar moto
   // =========================

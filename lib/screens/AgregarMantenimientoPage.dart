@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/usuario.dart';
 import '../models/moto.dart';
 import '../models/Tipo.dart';
@@ -47,14 +49,17 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
   int numeroRegistroSiguiente = 0;
   bool cargandoNumeroRegistro = true;
 
+  // OCR
+  final ImagePicker _picker = ImagePicker();
+  bool procesandoOCR = false;
+
   @override
   void initState() {
     super.initState();
     _cargarTipos();
-    _cargarNumeroRegistro(); // Contador de Registros
+    _cargarNumeroRegistro();
   }
 
-  // Método para cargar número de registro
   Future<void> _cargarNumeroRegistro() async {
     try {
       final registros = await RegistrosService.listarRegistros();
@@ -65,7 +70,7 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
     } catch (e) {
       print('Error al obtener número de registro: $e');
       setState(() {
-        numeroRegistroSiguiente = 1; // Default
+        numeroRegistroSiguiente = 1;
         cargandoNumeroRegistro = false;
       });
     }
@@ -102,41 +107,34 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header con información del registro
               _buildHeaderCard(),
               const SizedBox(height: 24),
 
-              // Sección Cliente
               _buildSectionTitle('Información del Cliente', Icons.person),
               const SizedBox(height: 12),
               _searchClienteField(),
               const SizedBox(height: 20),
 
-              // Sección Vehículo
               _buildSectionTitle('Vehículo', Icons.motorcycle),
               const SizedBox(height: 12),
               _dropdownVehiculo(),
               const SizedBox(height: 20),
 
-              // Sección Tipo de Mantenimiento
               _buildSectionTitle('Tipo de Servicio', Icons.build),
               const SizedBox(height: 12),
               _dropdownTipo(),
               const SizedBox(height: 20),
 
-              // Sección Productos
               _buildSectionTitle('Productos y Repuestos', Icons.shopping_cart),
               const SizedBox(height: 12),
               _productsBox(),
               const SizedBox(height: 20),
 
-              // Sección Observaciones
               _buildSectionTitle('Observaciones', Icons.note_alt),
               const SizedBox(height: 12),
               _descriptionField(),
               const SizedBox(height: 32),
 
-              // Botón Guardar
               _buildGuardarButton(),
               const SizedBox(height: 20),
             ],
@@ -145,8 +143,6 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
       ),
     );
   }
-
-  // ---------------- Diseño del Componente ----------------
 
   Widget _buildHeaderCard() {
     return Container(
@@ -186,7 +182,7 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
                 label: 'Registro',
                 value: cargandoNumeroRegistro
                     ? '...'
-                    : '#${numeroRegistroSiguiente.toString().padLeft(8, '0')}', // ✅ CAMBIO AQUÍ
+                    : '#${numeroRegistroSiguiente.toString().padLeft(8, '0')}',
               ),
             ],
           ),
@@ -313,6 +309,18 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(
+              icon: const Icon(Icons.camera_alt, color: Colors.black),
+              onPressed: _abrirCamaraCliente,
+              tooltip: 'Buscar con cámara',
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
               icon: const Icon(Icons.search, color: Colors.black),
               onPressed: _buscarCliente,
               tooltip: 'Buscar cliente',
@@ -321,6 +329,175 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _abrirCamaraCliente() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2B2B2B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Buscar Cliente por Placa',
+                  style: TextStyle(
+                    color: Colors.yellow[700],
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.yellow),
+                title: const Text(
+                  'Tomar foto',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: const Text(
+                  'Detecta Placa',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _procesarPlacaOCR(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.yellow),
+                title: const Text(
+                  'Elegir de galería',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: const Text(
+                  'Selecciona una foto de la placa',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _procesarPlacaOCR(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _procesarPlacaOCR(ImageSource source) async {
+    final XFile? imagen = await _picker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
+
+    if (imagen == null) return;
+
+    setState(() => procesandoOCR = true);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) =>
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2B2B2B),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(
+                    color: Color(0xFFFFD700),
+                    strokeWidth: 3,
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Detectando placa y\nbuscando dueño...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+
+    try {
+      final File imageFile = File(imagen.path);
+      final resultado = await MotoService.buscarDuenoPorPlaca(imageFile);
+
+      Navigator.pop(context);
+
+      if (resultado != null && resultado['success'] == true) {
+        setState(() {
+          idClienteSeleccionado = resultado['idUsuario'];
+          clienteCtrl.text = resultado['nombreCompleto'];
+        });
+
+        await _cargarMotos(resultado['idUsuario']);
+
+        setState(() {
+          idMotoSeleccionada = resultado['idMoto'];
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cliente encontrado: ${resultado['nombreCompleto']} | Vehículo: ${resultado['marca']} ${resultado['modelo']} (${resultado['placa']})',
+            ),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        final mensaje = resultado?['mensaje'] ??
+            'No se pudo procesar la imagen';
+        final placa = resultado?['placa'];
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              placa != null
+                  ? '❌ $mensaje | Placa detectada: $placa'
+                  : '❌ $mensaje',
+            ),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            action: SnackBarAction(
+              label: 'Reintentar',
+              textColor: Colors.yellow,
+              onPressed: () => _abrirCamaraCliente(),
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      _mostrarError('Error al procesar la imagen: $e');
+    } finally {
+      setState(() => procesandoOCR = false);
+    }
   }
 
   Widget _dropdownVehiculo() {
@@ -749,8 +926,6 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
     );
   }
 
-  // ---------------- VALIDACIÓN Y GUARDADO ----------------
-
   void _validarAntesDeGuardar() {
     setState(() => intentoGuardar = true);
 
@@ -926,7 +1101,6 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
   }
 
   Future<void> _guardarMantenimiento() async {
-    // Mostrar loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -959,7 +1133,6 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
     );
 
     try {
-      // Obtener el usuario actual del token
       final userJson = await TokenManager.getUserJson();
       final idUsuarioActual = userJson?['id_usuario'];
 
@@ -980,7 +1153,7 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
         detallesSeleccionados.map((detalle) => detalle.toJson()).toList(),
       };
 
-      print('JSON a enviar: ${jsonEncode(body)}');
+      //print('JSON a enviar: ${jsonEncode(body)}');
 
       final resultado = await RegistrosService.crear(body);
 
@@ -1047,10 +1220,8 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
     );
   }
 
-  // ---------------- LÓGICA DE NEGOCIO ----------------
-
   Future<void> _buscarCliente() async {
-    print('🔍 Iniciando búsqueda de cliente...');
+    //print('Iniciando búsqueda de cliente...');
     final Usuario? usuario = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const BuscarUsuarioPage()),
@@ -1061,7 +1232,6 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
         idClienteSeleccionado = usuario.idUsuario;
         clienteCtrl.text = usuario.nombreCompleto ?? '';
 
-        // reset vehículo
         idMotoSeleccionada = null;
         vehiculoCtrl.clear();
         motosCliente.clear();
