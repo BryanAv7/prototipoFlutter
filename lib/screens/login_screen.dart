@@ -120,10 +120,41 @@ class _LoginScreenState extends State<LoginScreen> {
                         const Spacer(),
 
                         Center(
-                          child: Icon(
-                            Icons.motorcycle,
-                            color: Colors.grey[400],
-                            size: 100,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.red,
+                                width: 3,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/logoMotors.png',
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[850],
+                                    child: Icon(
+                                      Icons.motorcycle,
+                                      color: Colors.grey[400],
+                                      size: 60,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
                         ),
 

@@ -39,40 +39,56 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
 
   Widget buildMotoRow(String label1, String value1, String label2, String value2) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: '$label1: ',
-                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+            child: Row(
+              children: [
+                Text(
+                  '$label1: ',
+                  style: const TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
-                  TextSpan(
-                    text: value1,
-                    style: const TextStyle(color: Colors.white70),
+                ),
+                Expanded(
+                  child: Text(
+                    value1,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: '$label2: ',
-                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+            child: Row(
+              children: [
+                Text(
+                  '$label2: ',
+                  style: const TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
-                  TextSpan(
-                    text: value2,
-                    style: const TextStyle(color: Colors.white70),
+                ),
+                Expanded(
+                  child: Text(
+                    value2,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -83,13 +99,17 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        backgroundColor: Colors.yellow[700],
+        backgroundColor: const Color(0xFFFFD700),
         elevation: 0,
         title: const Text(
-          'Ver Perfil',
-          style: TextStyle(color: Colors.black),
+          'Mi Perfil',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.normal,
+            fontSize: 20,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -97,7 +117,11 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
         ),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFFFFD700),
+        ),
+      )
           : usuario == null
           ? const Center(
         child: Text(
@@ -106,231 +130,397 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
         ),
       )
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Foto de perfil y botones
+            // Header con foto y botones
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFFFD700).withOpacity(0.2),
+                    const Color(0xFFFFD700).withOpacity(0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFFFD700).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      // Avatar
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFFFD700),
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFD700).withOpacity(0.3),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 30,
+                          backgroundColor: const Color(0xFF2B2B2B),
+                          backgroundImage: usuario!.rutaImagen != null &&
+                              usuario!.rutaImagen!.isNotEmpty
+                              ? NetworkImage(usuario!.rutaImagen!)
+                              : null,
+                          child: (usuario!.rutaImagen == null ||
+                              usuario!.rutaImagen!.isEmpty)
+                              ? const Icon(
+                            Icons.person,
+                            color: Colors.white54,
+                            size: 40,
+                          )
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Nombre y usuario
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              usuario!.nombreCompleto ?? 'Sin nombre',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '@${usuario!.nombreUsuario ?? 'usuario'}',
+                              style: TextStyle(
+                                color: const Color(0xFFFFD700).withOpacity(0.8),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Botones
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            if (usuario != null) {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      EditProfileScreen(usuario: usuario!),
+                                ),
+                              );
+                              loadUser();
+                            }
+                          },
+                          icon: const Icon(Icons.edit, color: Colors.black, size: 18),
+                          label: const Text(
+                            'Editar Perfil',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          print('Compartir perfil');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2B2B2B),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: const BorderSide(
+                              color: Color(0xFFFFD700),
+                              width: 1.5,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(12),
+                        ),
+                        child: const Icon(
+                          Icons.share,
+                          color: Color(0xFFFFD700),
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Descripción
             Row(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.grey[850],
-                  backgroundImage: usuario!.rutaImagen != null &&
-                      usuario!.rutaImagen!.isNotEmpty
-                      ? NetworkImage(usuario!.rutaImagen!)
-                      : null,
-                  child: (usuario!.rutaImagen == null ||
-                      usuario!.rutaImagen!.isEmpty)
-                      ? const Icon(Icons.person, color: Colors.grey, size: 32)
-                      : null,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.description,
+                    color: Color(0xFFFFD700),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  usuario!.nombreUsuario ?? "",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                const Text(
+                  'Descripción',
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: 75,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (usuario != null) {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                EditProfileScreen(usuario: usuario!),
-                          ),
-                        );
-                        loadUser();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.yellow[700],
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6)),
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                    ),
-                    child: const Text(
-                      'Editar Perfil',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.black, fontSize: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    print('Compartir perfil');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.yellow[700],
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6)),
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                  ),
-                  child: const Text(
-                    'Compartir',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.black, fontSize: 12),
+                    fontSize: 18,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 1),
-            const Divider(color: Colors.grey, thickness: 1),
-            const SizedBox(height: 8),
-            // Descripción
-            const Text(
-              'Descripción',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[850],
+                color: const Color(0xFF1E1E1E),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white24,
+                  width: 1,
+                ),
               ),
               child: Text(
                 usuario!.descripcion?.isNotEmpty == true
                     ? usuario!.descripcion!
                     : 'Aún no has agregado una descripción.',
-                style: const TextStyle(color: Colors.grey, fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 1),
-            const Divider(color: Colors.grey, thickness: 1),
-            const SizedBox(height: 12),
-            // Garaje virtual
-            const Text(
-              'Garaje Virtual',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ConstrainedBox(
-              constraints: motos.isEmpty
-                  ? const BoxConstraints() // se ajusta al contenido si no hay motos
-                  : const BoxConstraints(maxHeight: 400),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[850],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: motos.isEmpty
-                    ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.motorcycle, color: Colors.grey, size: 48),
-                    SizedBox(height: 12),
-                    Text(
-                      'No tienes motos en tu garaje',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      '¡Añade tu primera moto!',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
-                    ),
-                  ],
-                )
-                    : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: motos.length,
-                  itemBuilder: (context, index) {
-                    final motoItem = motos[index];
-                    final isSelected = selectedMotoIndex == index;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (selectedMotoIndex == index) {
-                            selectedMotoIndex = null;
-                          } else {
-                            selectedMotoIndex = index;
-                          }
-                        });
-                      },
-                      child: Card(
-                        color: Colors.grey[850],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: isSelected
-                              ? const BorderSide(
-                              color: Colors.yellow, width: 2)
-                              : BorderSide.none,
-                        ),
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[700],
-                                  image: motoItem.ruta_imagenMotos != null &&
-                                      motoItem.ruta_imagenMotos!.isNotEmpty
-                                      ? DecorationImage(
-                                    image: NetworkImage(
-                                        motoItem.ruta_imagenMotos!),
-                                    fit: BoxFit.cover,
-                                  )
-                                      : null,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: (motoItem.ruta_imagenMotos == null ||
-                                    motoItem.ruta_imagenMotos!.isEmpty)
-                                    ? const Icon(Icons.motorcycle,
-                                    color: Colors.grey)
-                                    : null,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    buildMotoRow('Marca', motoItem.marca ?? '-',
-                                        'Placa', motoItem.placa ?? '-'),
-                                    buildMotoRow('Modelo', motoItem.modelo ?? '-',
-                                        'Año', motoItem.anio?.toString() ?? '-'),
-                                    buildMotoRow(
-                                        'Kilometraje',
-                                        '${motoItem.kilometraje?.toString() ?? '-'} km',
-                                        'Cilindraje',
-                                        '${motoItem.cilindraje?.toString() ?? '-'} cc'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                style: TextStyle(
+                  color: usuario!.descripcion?.isNotEmpty == true
+                      ? Colors.white70
+                      : Colors.white38,
+                  fontSize: 14,
+                  fontStyle: usuario!.descripcion?.isNotEmpty == true
+                      ? FontStyle.normal
+                      : FontStyle.italic,
                 ),
               ),
             ),
             const SizedBox(height: 24),
+
+            // Garaje virtual
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.garage,
+                    color: Color(0xFFFFD700),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Garaje Virtual',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Lista de motos
+            motos.isEmpty
+                ? Container(
+              padding: const EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white24,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.motorcycle,
+                    color: Colors.white.withOpacity(0.3),
+                    size: 60,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No tienes motos en tu garaje',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '¡Añade tu primera moto!',
+                    style: TextStyle(
+                      color: Color(0xFFFFD700),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            )
+                : ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: motos.length,
+              itemBuilder: (context, index) {
+                final motoItem = motos[index];
+                final isSelected = selectedMotoIndex == index;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (selectedMotoIndex == index) {
+                        selectedMotoIndex = null;
+                      } else {
+                        selectedMotoIndex = index;
+                      }
+                    });
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFFFFD700)
+                            : Colors.white24,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                        BoxShadow(
+                          color: const Color(0xFFFFD700)
+                              .withOpacity(0.3),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                          : [],
+                    ),
+                    child: Row(
+                      children: [
+                        // Imagen de la moto
+                        Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2B2B2B),
+                            borderRadius: BorderRadius.circular(10),
+                            image: motoItem.ruta_imagenMotos != null &&
+                                motoItem.ruta_imagenMotos!.isNotEmpty
+                                ? DecorationImage(
+                              image: NetworkImage(
+                                  motoItem.ruta_imagenMotos!),
+                              fit: BoxFit.cover,
+                            )
+                                : null,
+                          ),
+                          child: (motoItem.ruta_imagenMotos == null ||
+                              motoItem.ruta_imagenMotos!.isEmpty)
+                              ? Icon(
+                            Icons.motorcycle,
+                            color: Colors.white.withOpacity(0.3),
+                            size: 35,
+                          )
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        // Info de la moto
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${motoItem.marca ?? '-'} ${motoItem.modelo ?? '-'}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              buildMotoRow(
+                                'Placa',
+                                motoItem.placa ?? '-',
+                                'Año',
+                                motoItem.anio?.toString() ?? '-',
+                              ),
+                              buildMotoRow(
+                                'Km',
+                                '${motoItem.kilometraje?.toString() ?? '-'} km',
+                                'CC',
+                                '${motoItem.cilindraje?.toString() ?? '-'} cc',
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Indicador de selección
+                        if (isSelected)
+                          const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFFFFD700),
+                            size: 24,
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // Botón añadir moto
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -338,25 +528,28 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            AddMotorcycleScreen(usuario: usuario!)),
+                      builder: (context) =>
+                          AddMotorcycleScreen(usuario: usuario!),
+                    ),
                   ).then((_) => loadUser());
                 },
-                icon: const Icon(Icons.motorcycle, color: Colors.black, size: 20),
+                icon: const Icon(Icons.add, color: Colors.black, size: 22),
                 label: const Text(
                   'AÑADIR MI MOTO',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.yellow[700],
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: const Color(0xFFFFD700),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  elevation: 4,
                 ),
               ),
             ),
@@ -382,12 +575,14 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
             }
           });
         },
-        backgroundColor: Colors.yellow[700],
+        backgroundColor: const Color(0xFFFFD700),
         label: const Text(
-          'Editar',
-          style: TextStyle(color: Colors.black),
+          'Ver Detalles',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        icon: const Icon(Icons.edit, color: Colors.black),
       )
           : null,
     );
