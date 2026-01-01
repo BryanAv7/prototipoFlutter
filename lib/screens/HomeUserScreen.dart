@@ -3,7 +3,7 @@ import 'package:motos_app/screens/ViewProfileScreen.dart';
 import '../services/auth_service.dart';
 import '../utils/token_manager.dart';
 import 'dart:convert';
-
+import 'RutasMenuScreen.dart';
 class HomeUserScreen extends StatefulWidget {
   const HomeUserScreen({super.key});
 
@@ -118,7 +118,12 @@ class _HomeUserScreenState extends State<HomeUserScreen> {
               icon: Icons.route,
               label: 'Rutas',
               selected: _selectedCardIndex == 2,
-              onTap: () => setState(() => _selectedCardIndex = 2),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RutasMenuPage()),
+                );
+              },
             ),
           ],
         ),
