@@ -130,12 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSpacing: 20,
             children: [
               _DashboardCard(
-                icon: Icons.list_alt,
-                label: 'Órdenes',
-                selected: _selectedCardIndex == 0,
-                onTap: () => setState(() => _selectedCardIndex = 0),
-              ),
-              _DashboardCard(
                 icon: Icons.inventory,
                 label: 'Inventario',
                 selected: _selectedCardIndex == 1,

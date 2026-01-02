@@ -53,6 +53,9 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
   final ImagePicker _picker = ImagePicker();
   bool procesandoOCR = false;
 
+  // BÚSQUEDA
+  bool clienteSeleccionadoPorOCR = false;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +79,21 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
     }
   }
 
+  void _limpiarCampos() {
+    setState(() {
+      idClienteSeleccionado = null;
+      idTipoSeleccionado = null;
+      idMotoSeleccionada = null;
+      detallesSeleccionados = [];
+      clienteCtrl.clear();
+      vehiculoCtrl.clear();
+      descripcionCtrl.clear();
+      motosCliente = [];
+      clienteSeleccionadoPorOCR = false;
+      intentoGuardar = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,6 +114,13 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
           ),
         ),
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black),
+            onPressed: _limpiarCampos,
+            tooltip: 'Limpiar campos',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -305,25 +330,13 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFD700),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.camera_alt, color: Colors.black),
-              onPressed: _abrirCamaraCliente,
-              tooltip: 'Buscar con cámara',
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD700),
+              color: clienteSeleccionadoPorOCR ? Colors.grey : const Color(0xFFFFD700),
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(
               icon: const Icon(Icons.search, color: Colors.black),
-              onPressed: _buscarCliente,
-              tooltip: 'Buscar cliente',
+              onPressed: clienteSeleccionadoPorOCR ? null : _buscarCliente,
+              tooltip: clienteSeleccionadoPorOCR ? 'Deshabilitado - Cliente seleccionado por OCR' : 'Buscar cliente',
             ),
           ),
         ],
@@ -346,7 +359,7 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
-                  'Buscar Cliente por Placa',
+                  'Buscar Vehículo por Placa',
                   style: TextStyle(
                     color: Colors.yellow[700],
                     fontSize: 18,
@@ -445,6 +458,7 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
         setState(() {
           idClienteSeleccionado = resultado['idUsuario'];
           clienteCtrl.text = resultado['nombreCompleto'];
+          clienteSeleccionadoPorOCR = true;
         });
 
         await _cargarMotos(resultado['idUsuario']);
@@ -502,20 +516,168 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
 
   Widget _dropdownVehiculo() {
     if (idClienteSeleccionado == null) {
-      return _campoBloqueado(
-        "Seleccione primero un cliente",
-        Icons.lock_outline,
+      return Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white24,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_outline, color: Colors.white38, size: 25),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "Seleccione primero un cliente",
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.camera_alt, color: Colors.black),
+                onPressed: _abrirCamaraCliente,
+                tooltip: 'Detectar placa con cámara',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
     if (cargandoMotos) {
-      return _buildLoadingField("Cargando vehículos...");
+      return Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFFFD700).withOpacity(0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Text(
+                      "Cargando vehículos...",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: clienteSeleccionadoPorOCR ? const Color(0xFFFFD700) : Colors.grey,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.camera_alt, color: Colors.black),
+                onPressed: clienteSeleccionadoPorOCR ? _abrirCamaraCliente : null,
+                tooltip: clienteSeleccionadoPorOCR ? 'Detectar placa con cámara' : 'Deshabilitado - Cliente seleccionado por búsqueda',
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (motosCliente.isEmpty) {
-      return _campoBloqueado(
-        "Este cliente no tiene vehículos registrados",
-        Icons.warning_amber,
+      return Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white24,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber, color: Colors.white38, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "Este cliente no tiene vehículos registrados",
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: clienteSeleccionadoPorOCR ? const Color(0xFFFFD700) : Colors.grey,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.camera_alt, color: Colors.black),
+                onPressed: clienteSeleccionadoPorOCR ? _abrirCamaraCliente : null,
+                tooltip: clienteSeleccionadoPorOCR ? 'Detectar placa con cámara' : 'Deshabilitado - Cliente seleccionado por búsqueda',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -537,38 +699,56 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
           ),
         ],
       ),
-      child: DropdownButtonFormField<int>(
-        dropdownColor: const Color(0xFF2B2B2B),
-        style: const TextStyle(color: Colors.white, fontSize: 15),
-        decoration: InputDecoration(
-          labelText: "Vehículo (Placa)",
-          labelStyle: TextStyle(
-            color: Colors.white.withOpacity(0.6),
-            fontSize: 14,
+      child: Row(
+        children: [
+          Expanded(
+            child: DropdownButtonFormField<int>(
+              dropdownColor: const Color(0xFF2B2B2B),
+              style: const TextStyle(color: Colors.white, fontSize: 15),
+              decoration: InputDecoration(
+                labelText: "Vehículo (Placa)",
+                labelStyle: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  Icons.motorcycle,
+                  color: idMotoSeleccionada != null
+                      ? const Color(0xFFFFD700)
+                      : Colors.white54,
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+              value: idMotoSeleccionada,
+              items: motosCliente.map((moto) {
+                return DropdownMenuItem(
+                  value: moto.id_moto,
+                  child: Text("${moto.placa} - ${moto.modelo}"),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() => idMotoSeleccionada = value);
+              },
+              validator: (value) => value == null ? 'Seleccione un vehículo' : null,
+            ),
           ),
-          prefixIcon: Icon(
-            Icons.motorcycle,
-            color: idMotoSeleccionada != null
-                ? const Color(0xFFFFD700)
-                : Colors.white54,
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: clienteSeleccionadoPorOCR ? const Color(0xFFFFD700) : Colors.grey,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.camera_alt, color: Colors.black),
+              onPressed: clienteSeleccionadoPorOCR ? _abrirCamaraCliente : null,
+              tooltip: clienteSeleccionadoPorOCR ? 'Detectar placa con cámara' : 'Deshabilitado - Cliente seleccionado por búsqueda',
+            ),
           ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-        ),
-        value: idMotoSeleccionada,
-        items: motosCliente.map((moto) {
-          return DropdownMenuItem(
-            value: moto.id_moto,
-            child: Text("${moto.placa} - ${moto.modelo}"),
-          );
-        }).toList(),
-        onChanged: (value) {
-          setState(() => idMotoSeleccionada = value);
-        },
-        validator: (value) => value == null ? 'Seleccione un vehículo' : null,
+        ],
       ),
     );
   }
@@ -1231,6 +1411,7 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
       setState(() {
         idClienteSeleccionado = usuario.idUsuario;
         clienteCtrl.text = usuario.nombreCompleto ?? '';
+        clienteSeleccionadoPorOCR = false;
 
         idMotoSeleccionada = null;
         vehiculoCtrl.clear();
