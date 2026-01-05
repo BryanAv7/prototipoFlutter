@@ -68,7 +68,7 @@ class _HistorialMantenimientosPageState
           "Historial de Mantenimientos",
           style: TextStyle(
             color: Colors.black,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.normal,
             fontSize: 20,
           ),
         ),
@@ -548,55 +548,32 @@ class _HistorialMantenimientosPageState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Encabezado: Fecha y tipo
+            // ========== FECHA Y ESTADO ==========
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            color: const Color(0xFFFFD700),
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            fecha,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (registro.tipoMantenimiento != null &&
-                          registro.tipoMantenimiento!.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFD700).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            registro.tipoMantenimiento!,
-                            style: const TextStyle(
-                              color: Color(0xFFFFD700),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          color: const Color(0xFFFFD700),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          fecha,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
                 _buildIndicadorEstado(registro.estado),
               ],
@@ -605,70 +582,115 @@ class _HistorialMantenimientosPageState
             const Divider(color: Colors.white12, height: 1),
             const SizedBox(height: 16),
 
-            // Información del vehículo
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.two_wheeler,
-                    color: Colors.blue,
-                    size: 20,
-                  ),
+            // ========== TIPO DE MANTENIMIENTO ==========
+            if (registro.tipoMantenimiento != null &&
+                registro.tipoMantenimiento!.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5)),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Vehículo',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
+                child: Row(
+                  children: [
+                    Icon(Icons.build, color: const Color(0xFFFFD700), size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      registro.tipoMantenimiento!,
+                      style: const TextStyle(
+                        color: Color(0xFFFFD700),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${registro.marcaMoto ?? 'N/A'} ${registro.modeloMoto ?? ''}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+            ],
 
-            // Observaciones si existen
+            // ========== CLIENTE ==========
+            if (registro.nombreCliente != null &&
+                registro.nombreCliente!.isNotEmpty) ...[
+              _buildInfoField(
+                icon: Icons.person,
+                label: 'Cliente',
+                value: registro.nombreCliente!,
+                color: Colors.purple,
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // ========== ENCARGADO ==========
+            if (registro.nombreEncargado != null &&
+                registro.nombreEncargado!.isNotEmpty) ...[
+              _buildInfoField(
+                icon: Icons.supervisor_account,
+                label: 'Encargado',
+                value: registro.nombreEncargado!,
+                color: Colors.amber,
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // ========== VEHÍCULO ==========
+            _buildInfoField(
+              icon: Icons.two_wheeler,
+              label: 'Vehículo',
+              value: '${registro.marcaMoto ?? 'N/A'} ${registro.modeloMoto ?? ''}',
+              color: Colors.blue,
+            ),
+            const SizedBox(height: 12),
+
+            // ========== PLACA ==========
+            if (registro.placaMoto != null && registro.placaMoto!.isNotEmpty) ...[
+              _buildInfoField(
+                icon: Icons.badge,
+                label: 'Placa',
+                value: registro.placaMoto!,
+                color: Colors.cyan,
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // ========== COSTO TOTAL ==========
+            if (registro.costoTotal != null) ...[
+              _buildInfoField(
+                icon: Icons.attach_money,
+                label: 'Costo Total',
+                value: '\$${registro.costoTotal!.toStringAsFixed(2)}',
+                color: Colors.green,
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // ========== OBSERVACIONES ==========
             if (registro.descripcion != null &&
                 registro.descripcion!.isNotEmpty) ...[
-              const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white12,
-                  ),
+                  border: Border.all(color: Colors.white12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Observaciones',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12,
-                      ),
+                    Row(
+                      children: [
+                        Icon(Icons.note, color: Colors.amber, size: 16),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Observaciones',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -685,6 +707,51 @@ class _HistorialMantenimientosPageState
           ],
         ),
       ),
+    );
+  }
+
+  // ========== WIDGET AUXILIAR PARA MOSTRAR INFO ==========
+  Widget _buildInfoField({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
