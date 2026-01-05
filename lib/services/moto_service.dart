@@ -11,13 +11,19 @@ class MotoService {
   // Crear una nueva moto
   // =========================
   static Future<bool> crearMoto(Moto moto) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/motos');
-    final Map<String, dynamic> body = moto.toJson();
-
-    final token = await TokenManager.getToken();
-    if (token == null) return false;
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return false;
+      }
+
+      final url = Uri.parse('$baseUrl/motos');
+      final Map<String, dynamic> body = moto.toJson();
+
+      final token = await TokenManager.getToken();
+      if (token == null) return false;
+
       final response = await http.post(
         url,
         headers: {
@@ -29,6 +35,7 @@ class MotoService {
 
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
+      print('Error en crearMoto: $e');
       return false;
     }
   }
@@ -37,12 +44,18 @@ class MotoService {
   // Obtener la moto por ID
   // =========================
   static Future<Moto?> obtenerMotoPorId(int id) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/motos/$id');
-
-    final token = await TokenManager.getToken();
-    if (token == null) return null;
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return null;
+      }
+
+      final url = Uri.parse('$baseUrl/motos/$id');
+
+      final token = await TokenManager.getToken();
+      if (token == null) return null;
+
       final response = await http.get(
         url,
         headers: {
@@ -56,6 +69,7 @@ class MotoService {
       }
       return null;
     } catch (e) {
+      print('Error en obtenerMotoPorId: $e');
       return null;
     }
   }
@@ -64,12 +78,18 @@ class MotoService {
   // Listar todas las motos
   // =========================
   static Future<List<Moto>> listarMotos() async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/motos');
-
-    final token = await TokenManager.getToken();
-    if (token == null) return [];
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return [];
+      }
+
+      final url = Uri.parse('$baseUrl/motos');
+
+      final token = await TokenManager.getToken();
+      if (token == null) return [];
+
       final response = await http.get(
         url,
         headers: {
@@ -83,6 +103,7 @@ class MotoService {
       }
       return [];
     } catch (e) {
+      print('Error en listarMotos: $e');
       return [];
     }
   }
@@ -91,12 +112,18 @@ class MotoService {
   // Listar motos por usuario
   // =========================
   static Future<List<Moto>> listarMotosPorUsuario(int idUsuario) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/motos/usuario/$idUsuario');
-
-    final token = await TokenManager.getToken();
-    if (token == null) return [];
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return [];
+      }
+
+      final url = Uri.parse('$baseUrl/motos/usuario/$idUsuario');
+
+      final token = await TokenManager.getToken();
+      if (token == null) return [];
+
       final response = await http.get(
         url,
         headers: {
@@ -110,35 +137,39 @@ class MotoService {
       }
       return [];
     } catch (e) {
+      print('Error en listarMotosPorUsuario: $e');
       return [];
     }
   }
 
-
-// Buscar dueño por placa usando OCR
+  // =========================
+  // Buscar dueño por placa usando OCR
+  // =========================
   static Future<Map<String, dynamic>?> buscarDuenoPorPlaca(File imageFile) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/motos/ocr/buscar-dueno');
-
-    final request = http.MultipartRequest('POST', url);
-    request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
-
-    final token = await TokenManager.getToken();
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-
     try {
-      //print('📤 Enviando imagen para buscar dueño...');
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return null;
+      }
+
+      final url = Uri.parse('$baseUrl/motos/ocr/buscar-dueno');
+
+      final request = http.MultipartRequest('POST', url);
+      request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
+
+      final token = await TokenManager.getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
       final response = await request.send();
       final respStr = await response.stream.bytesToString();
-
-      //print('Response buscarDuenoPorPlaca: $respStr');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(respStr);
 
         if (data['success'] == true) {
-          //print('Cliente encontrado: ${data['nombreCompleto']}');
           return {
             'success': true,
             'idUsuario': data['idUsuario'],
@@ -149,7 +180,6 @@ class MotoService {
             'marca': data['marca'],
           };
         } else {
-          //print(' ${data['mensaje']}');
           return {
             'success': false,
             'mensaje': data['mensaje'] ?? 'No se encontró el vehículo',
@@ -168,14 +198,20 @@ class MotoService {
   // Actualizar moto
   // =========================
   static Future<Moto?> actualizarMotoAndGet(Moto motoActualizada) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/motos/${motoActualizada.id_moto}');
-
-    final token = await TokenManager.getToken();
-    if (token == null) {
-      return null;
-    }
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return null;
+      }
+
+      final url = Uri.parse('$baseUrl/motos/${motoActualizada.id_moto}');
+
+      final token = await TokenManager.getToken();
+      if (token == null) {
+        return null;
+      }
+
       final response = await http.put(
         url,
         headers: {
@@ -191,6 +227,7 @@ class MotoService {
       return null;
 
     } catch (e) {
+      print('Error en actualizarMotoAndGet: $e');
       return null;
     }
   }
@@ -199,21 +236,27 @@ class MotoService {
   // Detectar placa con OCR
   // =========================
   static Future<String?> detectarPlacaOCR(File image) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/motos/ocr/placa');
-
-    final request = http.MultipartRequest('POST', url);
-    request.files.add(
-      await http.MultipartFile.fromPath('image', image.path),
-    );
-
-    final token = await TokenManager.getToken();
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    } else {
-      return null;
-    }
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return null;
+      }
+
+      final url = Uri.parse('$baseUrl/motos/ocr/placa');
+
+      final request = http.MultipartRequest('POST', url);
+      request.files.add(
+        await http.MultipartFile.fromPath('image', image.path),
+      );
+
+      final token = await TokenManager.getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      } else {
+        return null;
+      }
+
       final response = await request.send();
       final respStr = await response.stream.bytesToString();
 
@@ -223,28 +266,34 @@ class MotoService {
       }
       return null;
     } catch (e) {
+      print('Error en detectarPlacaOCR: $e');
       return null;
     }
   }
-
 
   // =========================
   // Subir imagen de moto
   // =========================
   static Future<String?> uploadMotoImage(File file) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/motos/upload');
-
-    final request = http.MultipartRequest('POST', url);
-    request.files.add(await http.MultipartFile.fromPath('file', file.path));
-
-    final token = await TokenManager.getToken();
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    } else {
-      return null;
-    }
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return null;
+      }
+
+      final url = Uri.parse('$baseUrl/motos/upload');
+
+      final request = http.MultipartRequest('POST', url);
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      final token = await TokenManager.getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      } else {
+        return null;
+      }
+
       final response = await request.send();
       final respStr = await response.stream.bytesToString();
 
@@ -253,6 +302,7 @@ class MotoService {
       }
       return null;
     } catch (e) {
+      print('Error en uploadMotoImage: $e');
       return null;
     }
   }

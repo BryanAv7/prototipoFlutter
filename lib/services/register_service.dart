@@ -9,25 +9,36 @@ class RegisterService {
     required String correo,
     required String contrasena,
   }) async {
-    final url = Uri.parse("${ApiConfig.baseUrl}/usuarios");
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
 
-    final body = {
-      "nombre_completo": nombreCompleto,
-      "nombre_usuario": nombreUsuario,
-      "correo": correo,
-      "contrasena": contrasena,
-      "pais": "Ecuador",
-      "ciudad": "Cuenca",
-      "descripcion": "",
-      "ruta_imagen": "Sin ruta"
-    };
+      if (baseUrl.isEmpty) {
+        return false;
+      }
 
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(body),
-    );
+      final url = Uri.parse("$baseUrl/usuarios");
 
-    return response.statusCode == 201;
+      final body = {
+        "nombre_completo": nombreCompleto,
+        "nombre_usuario": nombreUsuario,
+        "correo": correo,
+        "contrasena": contrasena,
+        "pais": "Ecuador",
+        "ciudad": "Cuenca",
+        "descripcion": "",
+        "ruta_imagen": "Sin ruta"
+      };
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body),
+      );
+
+      return response.statusCode == 201;
+    } catch (e) {
+      print('Error en registerUser: $e');
+      return false;
+    }
   }
 }

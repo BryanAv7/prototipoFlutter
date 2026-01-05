@@ -11,14 +11,20 @@ class ProductoService {
   // Listar todos los productos
   // =========================
   static Future<List<Producto>> listarProductos() async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/productos');
-
-    final token = await TokenManager.getToken();
-    if (token == null) {
-      return [];
-    }
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return [];
+      }
+
+      final url = Uri.parse('$baseUrl/productos');
+
+      final token = await TokenManager.getToken();
+      if (token == null) {
+        return [];
+      }
+
       final response = await http.get(
         url,
         headers: {
@@ -32,21 +38,28 @@ class ProductoService {
       }
 
       return [];
-    } catch (_) {
+    } catch (e) {
+      print('Error en listarProductos: $e');
       return [];
     }
   }
 
-  //=========================
+  // =========================
   // Actualizar producto (En este caso, solo la imagen)
   // =========================
   static Future<Producto?> actualizarProducto(Producto producto) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/productos/${producto.idProducto}');
-
-    final token = await TokenManager.getToken();
-    if (token == null) return null;
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return null;
+      }
+
+      final url = Uri.parse('$baseUrl/productos/${producto.idProducto}');
+
+      final token = await TokenManager.getToken();
+      if (token == null) return null;
+
       final response = await http.put(
         url,
         headers: {
@@ -70,19 +83,25 @@ class ProductoService {
   // Subir imagen de producto
   // =========================
   static Future<String?> uploadProductoImage(File file) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/productos/upload');
-
-    final request = http.MultipartRequest('POST', url);
-    request.files.add(await http.MultipartFile.fromPath('file', file.path));
-
-    final token = await TokenManager.getToken();
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    } else {
-      return null;
-    }
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return null;
+      }
+
+      final url = Uri.parse('$baseUrl/productos/upload');
+
+      final request = http.MultipartRequest('POST', url);
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      final token = await TokenManager.getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      } else {
+        return null;
+      }
+
       final response = await request.send();
       final respStr = await response.stream.bytesToString();
 

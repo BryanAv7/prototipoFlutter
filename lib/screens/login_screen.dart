@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../config/api.dart';
 import 'HomeScreen.dart';
 import 'RegisterScreen.dart';
 import 'HomeUserScreen.dart';
@@ -16,21 +17,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController contrasenaController = TextEditingController();
 
   bool _loading = false;
-
-  // Control para mostrar/ocultar contraseña
   bool _obscurePassword = true;
-
-  // Ícono dinámico para el correo
   Widget? _correoSuffix;
+
+  String? _savedIp;
 
   @override
   void initState() {
     super.initState();
-    // Inicialmente muestra X
     _correoSuffix = const Icon(Icons.close, color: Colors.red);
-
-    // Escuchar cambios en el campo de correo
     correoController.addListener(_validarCorreo);
+    _loadSavedIp();
   }
 
   @override
@@ -39,10 +36,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _loadSavedIp() async {
+    final prefs = await ApiConfig.getSavedServerIp();
+    setState(() {
+      _savedIp = prefs;
+    });
+  }
+
   void _validarCorreo() {
     final email = correoController.text.trim();
 
-    // Verificar si termina con el dominio
     if (email.endsWith('@gmail.com') || email.endsWith('@outlook.com')) {
       setState(() => _correoSuffix = const Icon(Icons.check_circle, color: Colors.green));
     } else {
@@ -50,10 +53,20 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-
   Future<void> _login() async {
     final correo = correoController.text.trim();
     final contrasena = contrasenaController.text.trim();
+
+    // Verificar si la IP está configurada
+    if (_savedIp == null || _savedIp!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Configura la IP del servidor antes de iniciar sesión."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     if (correo.isEmpty || contrasena.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,7 +94,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Token ya se guardó en AuthService
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("¡Bienvenido, ${response.usuario.nombreUsuario}!"),
@@ -89,11 +101,104 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    // Navegar al Home
     Navigator.pushReplacement(
       context,
-      //MaterialPageRoute(builder: (context) => const HomeUserScreen()),
       MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+  }
+
+  void _showIpDialog() {
+    final ipPuerto = _savedIp?.split(':') ?? ['', ''];
+    final ipController = TextEditingController(text: ipPuerto[0]);
+    final puertoController = TextEditingController(text: ipPuerto.length > 1 ? ipPuerto[1] : '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: const Text(
+          "Configurar Servidor",
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Campo IP
+            TextField(
+              controller: ipController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: "XXX.XXX.XX.XXX",
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                labelText: "Dirección IP",
+                labelStyle: const TextStyle(color: Colors.yellow),
+                filled: true,
+                fillColor: Colors.grey[900],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.yellow),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.yellow),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Campo Puerto
+            TextField(
+              controller: puertoController,
+              style: const TextStyle(color: Colors.white),
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "8080",
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                labelText: "Puerto",
+                labelStyle: const TextStyle(color: Colors.yellow),
+                filled: true,
+                fillColor: Colors.grey[900],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.yellow),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.yellow),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.red)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final ip = ipController.text.trim();
+              final puerto = puertoController.text.trim();
+
+              if (ip.isNotEmpty && puerto.isNotEmpty) {
+                final ipPuertoCompleta = '$ip:$puerto';
+                await ApiConfig.setServerIp(ipPuertoCompleta);
+                setState(() => _savedIp = ipPuertoCompleta);
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Por favor completa todos los campos"),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text("Guardar", style: TextStyle(color: Colors.green)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -104,7 +209,16 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        toolbarHeight: 0,
+        toolbarHeight: 60,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: IconButton(
+              icon: const Icon(Icons.settings, color: Colors.yellow),
+              onPressed: _showIpDialog,
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -188,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Colors.yellow),
                             ),
-                              suffixIcon: _correoSuffix,
+                            suffixIcon: _correoSuffix,
                           ),
                         ),
 
@@ -212,8 +326,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Colors.yellow),
                             ),
-
-                            // Botón para mostrar/ocultar
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword

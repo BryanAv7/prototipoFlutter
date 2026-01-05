@@ -8,10 +8,19 @@ class RutaService {
   // Crear/Guardar ruta
   static Future<Map<String, dynamic>?> crearRuta(Ruta ruta) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return {
+          'success': false,
+          'error': 'IP del servidor no configurada',
+        };
+      }
+
       final token = await TokenManager.getToken();
 
       final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/rutas'),
+        Uri.parse('$baseUrl/rutas'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -44,10 +53,16 @@ class RutaService {
   // Listar rutas del usuario
   static Future<List<Ruta>> listarRutasPorUsuario(int idUsuario) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return [];
+      }
+
       final token = await TokenManager.getToken();
 
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/rutas/usuario/$idUsuario'),
+        Uri.parse('$baseUrl/rutas/usuario/$idUsuario'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -68,10 +83,16 @@ class RutaService {
   // Obtener ruta por ID
   static Future<Ruta?> obtenerRutaPorId(int idRuta) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return null;
+      }
+
       final token = await TokenManager.getToken();
 
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/rutas/$idRuta'),
+        Uri.parse('$baseUrl/rutas/$idRuta'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -91,10 +112,16 @@ class RutaService {
   // Eliminar ruta
   static Future<bool> eliminarRuta(int idRuta) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return false;
+      }
+
       final token = await TokenManager.getToken();
 
       final response = await http.delete(
-        Uri.parse('${ApiConfig.baseUrl}/rutas/$idRuta'),
+        Uri.parse('$baseUrl/rutas/$idRuta'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/detalle_ui.dart';
 import '../config/api.dart';
 
-class DetalleItemCard extends StatelessWidget {
+class DetalleItemCard extends StatefulWidget {
   final DetalleUI detalle;
   final VoidCallback onDelete;
   final ValueChanged<int> onCantidadChanged;
@@ -13,6 +13,28 @@ class DetalleItemCard extends StatelessWidget {
     required this.onDelete,
     required this.onCantidadChanged,
   });
+
+  @override
+  State<DetalleItemCard> createState() => _DetalleItemCardState();
+}
+
+class _DetalleItemCardState extends State<DetalleItemCard> {
+  String _baseUrl = '';
+  bool _loadingUrl = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBaseUrl();
+  }
+
+  Future<void> _loadBaseUrl() async {
+    final baseUrl = await ApiConfig.getBaseUrl();
+    setState(() {
+      _baseUrl = baseUrl;
+      _loadingUrl = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +61,7 @@ class DetalleItemCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        detalle.nombre,
+                        widget.detalle.nombre,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -50,7 +72,7 @@ class DetalleItemCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        detalle.esProducto ? 'Producto' : 'Concepto manual',
+                        widget.detalle.esProducto ? 'Producto' : 'Concepto manual',
                         style: const TextStyle(
                           color: Colors.white60,
                           fontSize: 12,
@@ -72,15 +94,15 @@ class DetalleItemCard extends StatelessWidget {
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () {
-                            if (detalle.cantidad > 1) {
-                              onCantidadChanged(detalle.cantidad - 1);
+                            if (widget.detalle.cantidad > 1) {
+                              widget.onCantidadChanged(widget.detalle.cantidad - 1);
                             }
                           },
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
-                            '${detalle.cantidad}',
+                            '${widget.detalle.cantidad}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -94,7 +116,7 @@ class DetalleItemCard extends StatelessWidget {
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () {
-                            onCantidadChanged(detalle.cantidad + 1);
+                            widget.onCantidadChanged(widget.detalle.cantidad + 1);
                           },
                         ),
                       ],
@@ -104,7 +126,7 @@ class DetalleItemCard extends StatelessWidget {
                           color: Colors.red, size: 20),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      onPressed: onDelete,
+                      onPressed: widget.onDelete,
                     ),
                   ],
                 ),
@@ -120,14 +142,14 @@ class DetalleItemCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Precio: \$${detalle.precioUnitario.toStringAsFixed(2)}',
+                  'Precio: \$${widget.detalle.precioUnitario.toStringAsFixed(2)}',
                   style: const TextStyle(
                     color: Colors.yellow,
                     fontSize: 13,
                   ),
                 ),
                 Text(
-                  'Subtotal: \$${detalle.subtotal.toStringAsFixed(2)}',
+                  'Subtotal: \$${widget.detalle.subtotal.toStringAsFixed(2)}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -143,12 +165,33 @@ class DetalleItemCard extends StatelessWidget {
   }
 
   Widget _buildImagen() {
-    final ruta = detalle.imagenUrl;
+    final ruta = widget.detalle.imagenUrl;
 
-    if (detalle.esProducto && ruta != null && ruta.isNotEmpty) {
+    if (_loadingUrl) {
+      return Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.yellow.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (widget.detalle.esProducto && ruta != null && ruta.isNotEmpty) {
       final imageUrl = ruta.startsWith('http')
           ? ruta
-          : '${ApiConfig.baseUrl}$ruta';
+          : '$_baseUrl$ruta';
 
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -174,7 +217,7 @@ class DetalleItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(
-        detalle.esProducto ? Icons.inventory_2 : Icons.build,
+        widget.detalle.esProducto ? Icons.inventory_2 : Icons.build,
         color: Colors.yellow,
         size: 30,
       ),

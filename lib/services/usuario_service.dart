@@ -8,74 +8,106 @@ import '../utils/token_manager.dart';
 class UsuarioService {
 
   static Future<bool> updateUsuario(Usuario usuario) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/usuarios/${usuario.idUsuario}');
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
 
-    final Map<String, dynamic> body = {};
-    if (usuario.nombreCompleto != null) body['nombre_completo'] = usuario.nombreCompleto;
-    if (usuario.nombreUsuario != null) body['nombre_usuario'] = usuario.nombreUsuario;
-    if (usuario.descripcion != null) body['descripcion'] = usuario.descripcion;
-    if (usuario.pais != null) body['pais'] = usuario.pais;
-    if (usuario.ciudad != null) body['ciudad'] = usuario.ciudad;
-    if (usuario.rutaImagen != null) body['rutaimagen'] = usuario.rutaImagen;
+      if (baseUrl.isEmpty) {
+        return false;
+      }
 
-    final token = await TokenManager.getToken();
-    if (token == null) return false;
+      final url = Uri.parse('$baseUrl/usuarios/${usuario.idUsuario}');
 
-    final response = await http.put(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(body),
-    );
+      final Map<String, dynamic> body = {};
+      if (usuario.nombreCompleto != null) body['nombre_completo'] = usuario.nombreCompleto;
+      if (usuario.nombreUsuario != null) body['nombre_usuario'] = usuario.nombreUsuario;
+      if (usuario.descripcion != null) body['descripcion'] = usuario.descripcion;
+      if (usuario.pais != null) body['pais'] = usuario.pais;
+      if (usuario.ciudad != null) body['ciudad'] = usuario.ciudad;
+      if (usuario.rutaImagen != null) body['rutaimagen'] = usuario.rutaImagen;
 
-    return response.statusCode == 200;
+      final token = await TokenManager.getToken();
+      if (token == null) return false;
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error en updateUsuario: $e');
+      return false;
+    }
   }
 
   static Future<Usuario?> updateUsuarioAndGet(Usuario usuario) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/usuarios/${usuario.idUsuario}');
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
 
-    final token = await TokenManager.getToken();
-    if (token == null) return null;
+      if (baseUrl.isEmpty) {
+        return null;
+      }
 
-    final response = await http.put(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(usuario.toJson()),
-    );
+      final url = Uri.parse('$baseUrl/usuarios/${usuario.idUsuario}');
 
-    if (response.statusCode == 200) {
-      final usuarioBD = Usuario.fromJson(jsonDecode(response.body));
-      await TokenManager.saveUserJson(usuarioBD.toJson());
-      return usuarioBD;
+      final token = await TokenManager.getToken();
+      if (token == null) return null;
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(usuario.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        final usuarioBD = Usuario.fromJson(jsonDecode(response.body));
+        await TokenManager.saveUserJson(usuarioBD.toJson());
+        return usuarioBD;
+      }
+
+      return null;
+    } catch (e) {
+      print('Error en updateUsuarioAndGet: $e');
+      return null;
     }
-
-    return null;
   }
 
-
-// Cargar la imagen
+  // Cargar la imagen
   static Future<String> uploadImage(File file) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/usuarios/upload');
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
 
-    final request = http.MultipartRequest('POST', url);
-    request.files.add(await http.MultipartFile.fromPath('file', file.path));
+      if (baseUrl.isEmpty) {
+        throw Exception("IP del servidor no configurada");
+      }
 
-    final token = await TokenManager.getToken();
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
+      final url = Uri.parse('$baseUrl/usuarios/upload');
 
-    final response = await request.send();
+      final request = http.MultipartRequest('POST', url);
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
-    if (response.statusCode == 200) {
-      return await response.stream.bytesToString();
-    } else {
-      throw Exception('Error al subir imagen');
+      final token = await TokenManager.getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        return await response.stream.bytesToString();
+      } else {
+        throw Exception('Error al subir imagen');
+      }
+    } catch (e) {
+      print('Error en uploadImage: $e');
+      rethrow;
     }
   }
 
@@ -83,16 +115,22 @@ class UsuarioService {
   // OBTENER TODOS LOS USUARIOS (GET /api/usuarios)
   // =====================================================
   static Future<List<Usuario>> obtenerUsuarios() async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/usuarios');
-
-    // OBTENER TOKEN
-    final token = await TokenManager.getToken();
-    if (token == null) {
-      print('No hay token disponible');
-      throw Exception("No hay token de autenticación");
-    }
-
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        throw Exception("IP del servidor no configurada");
+      }
+
+      final uri = Uri.parse('$baseUrl/usuarios');
+
+      // OBTENER TOKEN
+      final token = await TokenManager.getToken();
+      if (token == null) {
+        print('No hay token disponible');
+        throw Exception("No hay token de autenticación");
+      }
+
       final response = await http.get(
         uri,
         headers: {
@@ -111,7 +149,8 @@ class UsuarioService {
         throw Exception('Error al cargar usuarios: ${response.statusCode} - $errorMsg');
       }
     } catch (e) {
-      throw Exception('Error de red o parsing: $e');
+      print('Error en obtenerUsuarios: $e');
+      rethrow;
     }
   }
 
@@ -130,5 +169,4 @@ class UsuarioService {
       return response.reasonPhrase ?? 'Error desconocido';
     }
   }
-
 }
