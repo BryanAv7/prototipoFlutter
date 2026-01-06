@@ -177,8 +177,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // ============== HISTORIAL USUARIOS ==============
             _DashboardCard(
-              icon: Icons.history,
-              label: 'Historial',
+              icon: Icons.person,
+              label: 'Clientes',
               selected: _selectedCardIndex == 4,
               onTap: () {
                 setState(() => _selectedCardIndex = 4);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/RegistroDetalleDTO.dart';
 import '../services/registros_service.dart';
 
@@ -22,6 +23,9 @@ class _HistorialMantenimientosPageState
   String _nombreClienteSeleccionado = '';
   bool _mostrarHistorial = false;
 
+  // ✅ Variable para OCR
+  final ImagePicker _imagePicker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
@@ -33,13 +37,12 @@ class _HistorialMantenimientosPageState
     super.dispose();
   }
 
-  void _cargarHistorial(int idCliente, String nombreCliente) {
+  void _cargarHistorial(String nombreCliente) {
     setState(() {
       cargando = true;
-      _idClienteSeleccionado = idCliente;
       _nombreClienteSeleccionado = nombreCliente;
       _mostrarHistorial = true;
-      futureHistorial = RegistrosService.obtenerHistorialMantenimientos(idCliente);
+      futureHistorial = RegistrosService.buscarHistorialPorNombre(nombreCliente);
     });
   }
 
@@ -47,10 +50,131 @@ class _HistorialMantenimientosPageState
     setState(() {
       _searchController.clear();
       _mostrarHistorial = false;
-      _idClienteSeleccionado = 0;
       _nombreClienteSeleccionado = '';
       historialMantenimientos = [];
     });
+  }
+
+  // ✅ NUEVO - Modal para seleccionar fuente de imagen
+  void _buscarPorPlacaOCR() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Escanear Placa',
+                  style: TextStyle(
+                    color: Colors.yellow[700],
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.yellow),
+                title: const Text('Tomar foto',
+                    style: TextStyle(color: Colors.white)),
+                subtitle: const Text('Usa la cámara para escanear la placa',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _procesarImagenPlacaOCR(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.yellow),
+                title: const Text('Elegir de galería',
+                    style: TextStyle(color: Colors.white)),
+                subtitle: const Text('Selecciona una foto existente',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _procesarImagenPlacaOCR(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close, color: Colors.red),
+                title: const Text('Cancelar',
+                    style: TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Procesar imagen con OCR
+  Future<void> _procesarImagenPlacaOCR(ImageSource source) async {
+    final XFile? imagen = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
+
+    if (imagen == null) return;
+
+    final imageBytes = await imagen.readAsBytes();
+
+    // Loader con mensaje
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: Color(0xFFFFD700)),
+              const SizedBox(height: 16),
+              const Text(
+                'Escaneando placa...',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // Obtener el historial por placa
+      final historial =
+      await RegistrosService.buscarHistorialPorPlacaOCR(imageBytes);
+
+      // Extraer el nombre del cliente del primer registro si existe
+      String nombreCliente = 'Búsqueda por Placa (OCR)';
+      if (historial.isNotEmpty && historial.first.nombreCliente != null) {
+        nombreCliente = historial.first.nombreCliente!;
+      }
+
+      setState(() {
+        cargando = true;
+        _nombreClienteSeleccionado = nombreCliente;
+        _mostrarHistorial = true;
+        futureHistorial = Future.value(historial);
+      });
+
+      Navigator.pop(context); // cerrar loader
+    } catch (e) {
+      Navigator.pop(context); // cerrar loader
+      _mostrarError('Error al procesar la imagen: $e');
+    }
   }
 
   @override
@@ -98,7 +222,7 @@ class _HistorialMantenimientosPageState
           ),
           const SizedBox(height: 8),
           Text(
-            'Ingresa el ID del cliente para ver su historial de mantenimientos',
+            'Ingrese el nombre del cliente o tome/seleccione una foto de la placa para ver su Historial de Mantenimientos.',
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
@@ -125,10 +249,10 @@ class _HistorialMantenimientosPageState
             ),
             child: TextField(
               controller: _searchController,
-              keyboardType: TextInputType.number,
+              keyboardType: TextInputType.text,
               style: const TextStyle(color: Colors.white, fontSize: 16),
               decoration: InputDecoration(
-                labelText: "ID del Cliente",
+                labelText: "Nombre del Cliente",
                 labelStyle: TextStyle(
                   color: Colors.white.withOpacity(0.6),
                   fontSize: 14,
@@ -148,91 +272,72 @@ class _HistorialMantenimientosPageState
 
           const SizedBox(height: 24),
 
-          // Botón para buscar
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFD700),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          // Botones
+          Row(
+            children: [
+              // Botón para buscar por nombre
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD700),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    final nombreText = _searchController.text.trim();
+
+                    if (nombreText.isEmpty) {
+                      _mostrarError('Por favor ingresa un nombre');
+                      return;
+                    }
+
+                    if (nombreText.length < 2) {
+                      _mostrarError('El nombre debe tener al menos 2 caracteres');
+                      return;
+                    }
+
+                    _cargarHistorial(nombreText);
+                  },
+                  icon: const Icon(Icons.search, color: Colors.black),
+                  label: const Text(
+                    'Buscar',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
-              onPressed: () {
-                final idText = _searchController.text.trim();
-
-                if (idText.isEmpty) {
-                  _mostrarError('Por favor ingresa un ID');
-                  return;
-                }
-
-                final id = int.tryParse(idText);
-                if (id == null || id <= 0) {
-                  _mostrarError('El ID debe ser un número válido');
-                  return;
-                }
-
-                // Cargar con nombre genérico (se obtendrá del backend)
-                _cargarHistorial(id, 'Cliente #$id');
-              },
-              icon: const Icon(Icons.search, color: Colors.black),
-              label: const Text(
-                'Buscar Historial',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 12),
+              // Botón para escanear placa con OCR
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4CAF50),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _buscarPorPlacaOCR,
+                  icon: const Icon(Icons.camera_alt, color: Colors.white),
+                  label: const Text(
+                    'Placa',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
 
           const SizedBox(height: 40),
-
-          // Info adicional
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD700).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFFFD700).withOpacity(0.3),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      color: Color(0xFFFFD700),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Busca por ID del Cliente',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Podrás ver todos los registros de mantenimiento asociados a ese cliente, incluyendo fecha, tipo de servicio, estado y vehículos.',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -355,7 +460,7 @@ class _HistorialMantenimientosPageState
             ),
             const SizedBox(height: 8),
             Text(
-              'No hay registros para el cliente #$_idClienteSeleccionado',
+              'No hay registros para el cliente #$_nombreClienteSeleccionado',
               style: const TextStyle(
                 color: Colors.white54,
                 fontSize: 14,
@@ -437,14 +542,6 @@ class _HistorialMantenimientosPageState
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'ID: $_idClienteSeleccionado',
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -543,16 +640,20 @@ class _HistorialMantenimientosPageState
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ========== FECHA Y ESTADO ==========
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+        ),
+        child: ExpansionTile(
+          iconColor: const Color(0xFFFFD700),
+          collapsedIconColor: const Color(0xFFFFD700),
+          backgroundColor: const Color(0xFF1E1E1E),
+          collapsedBackgroundColor: const Color(0xFF1E1E1E),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -563,147 +664,143 @@ class _HistorialMantenimientosPageState
                           size: 18,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          fecha,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                _buildIndicadorEstado(registro.estado),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Divider(color: Colors.white12, height: 1),
-            const SizedBox(height: 16),
-
-            // ========== TIPO DE MANTENIMIENTO ==========
-            if (registro.tipoMantenimiento != null &&
-                registro.tipoMantenimiento!.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.build, color: const Color(0xFFFFD700), size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      registro.tipoMantenimiento!,
-                      style: const TextStyle(
-                        color: Color(0xFFFFD700),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // ========== CLIENTE ==========
-            if (registro.nombreCliente != null &&
-                registro.nombreCliente!.isNotEmpty) ...[
-              _buildInfoField(
-                icon: Icons.person,
-                label: 'Cliente',
-                value: registro.nombreCliente!,
-                color: Colors.purple,
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // ========== ENCARGADO ==========
-            if (registro.nombreEncargado != null &&
-                registro.nombreEncargado!.isNotEmpty) ...[
-              _buildInfoField(
-                icon: Icons.supervisor_account,
-                label: 'Encargado',
-                value: registro.nombreEncargado!,
-                color: Colors.amber,
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // ========== VEHÍCULO ==========
-            _buildInfoField(
-              icon: Icons.two_wheeler,
-              label: 'Vehículo',
-              value: '${registro.marcaMoto ?? 'N/A'} ${registro.modeloMoto ?? ''}',
-              color: Colors.blue,
-            ),
-            const SizedBox(height: 12),
-
-            // ========== PLACA ==========
-            if (registro.placaMoto != null && registro.placaMoto!.isNotEmpty) ...[
-              _buildInfoField(
-                icon: Icons.badge,
-                label: 'Placa',
-                value: registro.placaMoto!,
-                color: Colors.cyan,
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // ========== COSTO TOTAL ==========
-            if (registro.costoTotal != null) ...[
-              _buildInfoField(
-                icon: Icons.attach_money,
-                label: 'Costo Total',
-                value: '\$${registro.costoTotal!.toStringAsFixed(2)}',
-                color: Colors.green,
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // ========== OBSERVACIONES ==========
-            if (registro.descripcion != null &&
-                registro.descripcion!.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.note, color: Colors.amber, size: 16),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Observaciones',
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            'Date: $fecha',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      registro.descripcion!,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
+                    if (registro.tipoMantenimiento != null &&
+                        registro.tipoMantenimiento!.isNotEmpty)
+                      Text(
+                        'Tipo: ${registro.tipoMantenimiento}',
+                        style: const TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
+              _buildIndicadorEstado(registro.estado),
             ],
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(color: Colors.white12, height: 1),
+                  const SizedBox(height: 16),
+
+                  // ========== CLIENTE ==========
+                  if (registro.nombreCliente != null &&
+                      registro.nombreCliente!.isNotEmpty) ...[
+                    _buildInfoField(
+                      icon: Icons.person,
+                      label: 'Cliente',
+                      value: registro.nombreCliente!,
+                      color: Colors.purple,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ========== ENCARGADO ==========
+                  if (registro.nombreEncargado != null &&
+                      registro.nombreEncargado!.isNotEmpty) ...[
+                    _buildInfoField(
+                      icon: Icons.supervisor_account,
+                      label: 'Encargado',
+                      value: registro.nombreEncargado!,
+                      color: Colors.amber,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ========== VEHÍCULO ==========
+                  _buildInfoField(
+                    icon: Icons.two_wheeler,
+                    label: 'Vehículo',
+                    value: '${registro.marcaMoto ?? 'N/A'} ${registro.modeloMoto ?? ''}',
+                    color: Colors.blue,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ========== PLACA ==========
+                  if (registro.placaMoto != null && registro.placaMoto!.isNotEmpty) ...[
+                    _buildInfoField(
+                      icon: Icons.badge,
+                      label: 'Placa',
+                      value: registro.placaMoto!,
+                      color: Colors.cyan,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ========== COSTO TOTAL ==========
+                  if (registro.costoTotal != null) ...[
+                    _buildInfoField(
+                      icon: Icons.attach_money,
+                      label: 'Costo Total',
+                      value: '\$${registro.costoTotal!.toStringAsFixed(2)}',
+                      color: Colors.green,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ========== OBSERVACIONES ==========
+                  if (registro.descripcion != null &&
+                      registro.descripcion!.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.note, color: Colors.amber, size: 16),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Observaciones',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            registro.descripcion!,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -775,7 +872,7 @@ class _HistorialMantenimientosPageState
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: colorEstado.withOpacity(0.2),
         borderRadius: BorderRadius.circular(8),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../config/api.dart';
@@ -163,6 +164,87 @@ class RegistrosService {
       }
     } catch (e) {
       print('Error en obtenerHistorialMantenimientos: $e');
+      rethrow;
+    }
+  }
+
+  // ================= BUSCAR POR NOMBRE DE CLIENTE =================
+  static Future<List<RegistroDetalleDTO>> buscarHistorialPorNombre(String nombreCliente) async {
+    try {
+      final uri = await _buildUrl('/buscar/nombre?nombreCliente=$nombreCliente');
+
+      final token = await TokenManager.getToken();
+      if (token == null) {
+        print('No hay token disponible');
+        throw Exception("No hay token de autenticación");
+      }
+
+      final response = await http.get(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      print("[RegistrosService] BUSCAR NOMBRE '$nombreCliente' → ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+        return data.map((e) => RegistroDetalleDTO.fromJson(e)).toList();
+      } else {
+        throw Exception("Error al buscar: ${response.statusCode} ${response.reasonPhrase}");
+      }
+    } catch (e) {
+      print('Error en buscarHistorialPorNombre: $e');
+      rethrow;
+    }
+  }
+
+  // ================= BUSCAR HISTORIAL POR PLACA (CON OCR) =================
+  static Future<List<RegistroDetalleDTO>> buscarHistorialPorPlacaOCR(Uint8List imageBytes) async {
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+      final uri = Uri.parse('$baseUrl/registros/ocr/historial');
+
+      final token = await TokenManager.getToken();
+      if (token == null) {
+        print('No hay token disponible');
+        throw Exception("No hay token de autenticación");
+      }
+
+      // Crear request multipart
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          imageBytes,
+          filename: 'placa_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ),
+      );
+
+      print("[RegistrosService] BUSCAR OCR PLACA → enviando imagen");
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      print("[RegistrosService] OCR PLACA → ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(responseBody);
+
+        if (data['success'] == true && data['historial'] != null) {
+          final List historialData = data['historial'];
+          return historialData.map((e) => RegistroDetalleDTO.fromJson(e)).toList();
+        } else {
+          throw Exception(data['mensaje'] ?? "Error desconocido");
+        }
+      } else {
+        throw Exception("Error al buscar: ${response.statusCode}");
+      }
+    } catch (e) {
+      print('Error en buscarHistorialPorPlacaOCR: $e');
       rethrow;
     }
   }
