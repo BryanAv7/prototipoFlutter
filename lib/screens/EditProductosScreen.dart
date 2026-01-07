@@ -223,7 +223,7 @@ class _EditProductosScreenState extends State<EditProductosScreen> {
     try {
       final urlImagen = await ProductoService.uploadProductoImage(_imageFile!);
 
-      if (urlImagen == null) {
+      if (urlImagen == null || urlImagen.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -233,6 +233,15 @@ class _EditProductosScreenState extends State<EditProductosScreen> {
           );
         }
         return;
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Imagen subida a Supabase'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
 
       Producto productoActualizado = Producto(

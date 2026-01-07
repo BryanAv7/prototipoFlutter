@@ -80,7 +80,7 @@ class UsuarioService {
   }
 
   // Cargar la imagen
-  static Future<String> uploadImage(File file) async {
+  static Future<UploadResponse?> uploadImage(File file) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
 
@@ -99,11 +99,25 @@ class UsuarioService {
       }
 
       final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
-        return await response.stream.bytesToString();
+        // Parsear la respuesta JSON
+        final Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
+
+        // El backend devuelve { "url": "...", "mensaje": "..." }
+        return UploadResponse(
+          url: jsonResponse['url'] ?? '',
+          mensaje: jsonResponse['mensaje'] ?? 'Imagen subida',
+        );
       } else {
-        throw Exception('Error al subir imagen');
+        // Intentar extraer el mensaje de error
+        try {
+          final Map<String, dynamic> errorResponse = jsonDecode(responseBody);
+          throw Exception('Error: ${errorResponse['mensaje'] ?? 'Error desconocido'}');
+        } catch (_) {
+          throw Exception('Error al subir imagen: ${response.statusCode}');
+        }
       }
     } catch (e) {
       print('Error en uploadImage: $e');
@@ -169,4 +183,17 @@ class UsuarioService {
       return response.reasonPhrase ?? 'Error desconocido';
     }
   }
+}
+  /// Clase para encapsular la respuesta de upload
+  class UploadResponse {
+  final String url;
+  final String mensaje;
+
+  UploadResponse({
+  required this.url,
+  required this.mensaje,
+  });
+
+  @override
+  String toString() => 'UploadResponse(url: $url, mensaje: $mensaje)';
 }

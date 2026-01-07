@@ -271,15 +271,15 @@ class MotoService {
     }
   }
 
-  // =========================
-  // Subir imagen de moto
-  // =========================
+// =========================
+// Subir imagen de moto
+// =========================
   static Future<String?> uploadMotoImage(File file) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
 
       if (baseUrl.isEmpty) {
-        return null;
+        throw Exception("IP del servidor no configurada");
       }
 
       final url = Uri.parse('$baseUrl/motos/upload');
@@ -290,17 +290,30 @@ class MotoService {
       final token = await TokenManager.getToken();
       if (token != null) {
         request.headers['Authorization'] = 'Bearer $token';
-      } else {
-        return null;
       }
 
       final response = await request.send();
-      final respStr = await response.stream.bytesToString();
+      final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
-        return respStr.trim();
+        // Parsear la respuesta JSON: { "url": "...", "mensaje": "..." }
+        final Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
+
+        // Extraer solo la URL
+        final String? urlImagen = jsonResponse['url'];
+        if (urlImagen != null && urlImagen.isNotEmpty) {
+          return urlImagen;
+        } else {
+          throw Exception('URL vacía en la respuesta');
+        }
+      } else {
+        try {
+          final Map<String, dynamic> errorResponse = jsonDecode(responseBody);
+          throw Exception('Error: ${errorResponse['mensaje'] ?? 'Error desconocido'}');
+        } catch (_) {
+          throw Exception('Error al subir imagen: ${response.statusCode}');
+        }
       }
-      return null;
     } catch (e) {
       print('Error en uploadMotoImage: $e');
       return null;

@@ -20,6 +20,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController paisController;
   late TextEditingController ciudadController;
   File? nuevaImagen;
+  bool isUploadingImage = false;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -34,6 +35,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ciudadController = TextEditingController(text: widget.usuario.ciudad);
   }
 
+  @override
+  void dispose() {
+    nombreUsuarioController.dispose();
+    descripcionController.dispose();
+    paisController.dispose();
+    ciudadController.dispose();
+    super.dispose();
+  }
+
   Future<void> seleccionarImagen() async {
     final XFile? imagen =
     await _picker.pickImage(source: ImageSource.gallery);
@@ -45,10 +55,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<String?> subirImagen(File file) async {
+    setState(() {
+      isUploadingImage = true;
+    });
+
     try {
-      return await UsuarioService.uploadImage(file);
-    } catch (_) {
+      final response = await UsuarioService.uploadImage(file);
+
+      if (response != null && response.url.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.mensaje)),
+        );
+        return response.url;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al subir imagen: respuesta vacía'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return null;
+      }
+    } catch (e) {
+      print('Error al subir imagen: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al subir imagen: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return null;
+    } finally {
+      setState(() {
+        isUploadingImage = false;
+      });
     }
   }
 
@@ -69,44 +109,75 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            GestureDetector(
-              onTap: seleccionarImagen,
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.grey[850],
-                backgroundImage: nuevaImagen != null
-                    ? FileImage(nuevaImagen!)
-                    : (widget.usuario.rutaImagen != null &&
-                    widget.usuario.rutaImagen!.isNotEmpty
-                    ? NetworkImage(widget.usuario.rutaImagen!)
-                as ImageProvider
-                    : null),
-                child: (nuevaImagen == null &&
-                    (widget.usuario.rutaImagen == null ||
-                        widget.usuario.rutaImagen!.isEmpty))
-                    ? const Icon(Icons.camera_alt,
-                    color: Colors.grey, size: 36)
-                    : null,
-              ),
+            // Avatar con indicador de carga
+            Stack(
+              children: [
+                GestureDetector(
+                  onTap: isUploadingImage ? null : seleccionarImagen,
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.grey[850],
+                    backgroundImage: nuevaImagen != null
+                        ? FileImage(nuevaImagen!)
+                        : (widget.usuario.rutaImagen != null &&
+                        widget.usuario.rutaImagen!.isNotEmpty
+                        ? NetworkImage(widget.usuario.rutaImagen!)
+                    as ImageProvider
+                        : null),
+                    child: (nuevaImagen == null &&
+                        (widget.usuario.rutaImagen == null ||
+                            widget.usuario.rutaImagen!.isEmpty))
+                        ? const Icon(Icons.camera_alt,
+                        color: Colors.grey, size: 36)
+                        : null,
+                  ),
+                ),
+                // Indicador de carga
+                if (isUploadingImage)
+                  Positioned.fill(
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.black45,
+                      child: const CircularProgressIndicator(
+                        valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.yellow),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 20),
-            Text('Toca la foto para cambiar',
-                style: TextStyle(color: Colors.grey[400])),
+            Text(
+              isUploadingImage
+                  ? 'Subiendo imagen...'
+                  : 'Toca la foto para cambiar',
+              style: TextStyle(
+                color: isUploadingImage ? Colors.yellow[700] : Colors.grey[400],
+              ),
+            ),
             const SizedBox(height: 30),
 
+            // Nombre Usuario
             TextField(
               controller: nombreUsuarioController,
+              enabled: !isUploadingImage,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 labelText: 'Nombre Usuario',
                 labelStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey[850],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 15),
+
+            // Descripción
             TextField(
               controller: descripcionController,
+              enabled: !isUploadingImage,
               maxLines: 3,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
@@ -114,43 +185,69 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 labelStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey[850],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 15),
+
+            // País
             TextField(
               controller: paisController,
+              enabled: !isUploadingImage,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 labelText: 'País',
                 labelStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey[850],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 15),
+
+            // Ciudad
             TextField(
               controller: ciudadController,
+              enabled: !isUploadingImage,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 labelText: 'Ciudad',
                 labelStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey[850],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 30),
 
+            // Botón Guardar
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () async {
-                  String rutaImagenActualizada = widget.usuario.rutaImagen ?? '';
+                onPressed: isUploadingImage
+                    ? null
+                    : () async {
+                  String rutaImagenActualizada =
+                      widget.usuario.rutaImagen ?? '';
 
+                  // Si hay imagen nueva, subirla a Supabase
                   if (nuevaImagen != null) {
-                    final url = await subirImagen(nuevaImagen!);
-                    if (url != null) rutaImagenActualizada = url;
+                    final urlSubida = await subirImagen(nuevaImagen!);
+                    if (urlSubida != null) {
+                      rutaImagenActualizada = urlSubida;
+                    } else {
+                      // No continuar si falla el upload
+                      return;
+                    }
                   }
 
+                  // Crear usuario actualizado
                   final usuarioActualizado = Usuario(
                     idUsuario: widget.usuario.idUsuario,
                     nombreUsuario: nombreUsuarioController.text,
@@ -161,35 +258,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     nombreCompleto: widget.usuario.nombreCompleto,
                   );
 
-                  final ok = await UsuarioService.updateUsuario(usuarioActualizado);
+                  // Actualizar en base de datos
+                  final ok = await UsuarioService
+                      .updateUsuario(usuarioActualizado);
 
                   if (ok) {
-                    await TokenManager.saveUserJson(usuarioActualizado.toJson());
+                    // Guardar en token manager
+                    await TokenManager.saveUserJson(
+                        usuarioActualizado.toJson());
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Perfil actualizado')),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Perfil actualizado exitosamente'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
 
-                    Navigator.pop(context, usuarioActualizado);
+                      Navigator.pop(context, usuarioActualizado);
+                    }
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Error al actualizar')),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Error al actualizar perfil'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.yellow[700],
+                  disabledBackgroundColor: Colors.grey[600],
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                icon: const Icon(Icons.edit, color: Colors.black),
-                label: const Text(
-                  'Guardar Cambios',
-                  style: TextStyle(color: Colors.black, fontSize: 16),
+                icon: const Icon(Icons.save, color: Colors.black),
+                label: Text(
+                  isUploadingImage ? 'Subiendo...' : 'Guardar Cambios',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-
           ],
         ),
       ),

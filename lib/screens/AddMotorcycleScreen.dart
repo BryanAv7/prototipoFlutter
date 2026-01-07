@@ -304,10 +304,32 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
 
     String rutaImagen = '';
     if (nuevaImagen != null) {
-      final uploadedImage =
-      await MotoService.uploadMotoImage(nuevaImagen!);
-      if (uploadedImage != null) {
-        rutaImagen = uploadedImage;
+      try {
+        final uploadedImage =
+        await MotoService.uploadMotoImage(nuevaImagen!);
+        if (uploadedImage != null && uploadedImage.isNotEmpty) {
+          rutaImagen = uploadedImage;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Imagen subida a Supabase'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Advertencia: No se subió imagen'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
 

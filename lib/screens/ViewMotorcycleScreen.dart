@@ -252,8 +252,32 @@ class _ViewMotorcycleScreenState extends State<ViewMotorcycleScreen> {
 
     // Si seleccionó una nueva imagen, subirla
     if (selectedImage != null) {
-      final url = await MotoService.uploadMotoImage(selectedImage!);
-      if (url != null) uploadedUrl = url;
+      try {
+        final url = await MotoService.uploadMotoImage(selectedImage!);
+        if (url != null && url.isNotEmpty) {
+          uploadedUrl = url;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Imagen actualizada en Supabase'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Advertencia: No se actualizó imagen'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
 
     // Actualizar campos de la moto

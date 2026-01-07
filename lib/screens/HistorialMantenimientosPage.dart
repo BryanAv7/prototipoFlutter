@@ -511,18 +511,6 @@ class _HistorialMantenimientosPageState
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Color(0xFFFFD700),
-                    size: 28,
-                  ),
-                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
