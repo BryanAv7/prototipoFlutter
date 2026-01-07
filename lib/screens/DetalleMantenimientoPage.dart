@@ -53,94 +53,115 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
 
           final d = snapshot.data!;
 
-          return SingleChildScrollView(
+          return ListView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
+            children: [
 
-                // ================= CLIENTE + ESTADO =================
-                _card(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            d.nombreCliente ?? 'Cliente no registrado',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+              // ================= CLIENTE + ESTADO =================
+              _card(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          d.nombreCliente ?? 'Cliente no registrado',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
-                          const SizedBox(height: 4),
-                          Text("Fecha: ${d.fecha}", style: _text()),
-                        ],
-                      ),
-                      _estadoChip(d.estado),
-                    ],
-                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text("Fecha: ${d.fecha}", style: _text()),
+                      ],
+                    ),
+                    _estadoChip(d.estado),
+                  ],
                 ),
+              ),
 
-                const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-                // ================= MOTO =================
-                _card(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _sectionTitle("Moto"),
-                      const SizedBox(height: 6),
-                      Text(
-                        "${d.marcaMoto ?? 'Marca desconocida'} ${d.modeloMoto ?? ''}",
-                        style: _text(),
-                      ),
+              // ================= MOTO =================
+              _card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionTitle("Moto"),
+                    const SizedBox(height: 6),
+                    Text(
+                      "${d.marcaMoto ?? 'Marca desconocida'} ${d.modeloMoto ?? ''}",
+                      style: _text(),
+                    ),
 
-                      if ((d.rutaImagenMoto ?? '').isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              d.rutaImagenMoto!,
-                              height: 180,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Text(
-                                "Imagen no disponible",
-                                style: TextStyle(color: Colors.white54),
-                              ),
+                    if ((d.rutaImagenMoto ?? '').isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            d.rutaImagenMoto!,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Text(
+                              "Imagen no disponible",
+                              style: TextStyle(color: Colors.white54),
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ================= MANTENIMIENTO =================
-                _card(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _sectionTitle("Mantenimiento"),
-                      const SizedBox(height: 6),
-                      Text(
-                        d.descripcion ?? 'Sin descripción',
-                        style: _text(),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Tipo: ${d.tipoMantenimiento ?? 'No definido'}",
-                        style: _text(),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ================= MANTENIMIENTO =================
+              _card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionTitle("Mantenimiento"),
+                    const SizedBox(height: 6),
+                    Text(
+                      d.descripcion ?? 'Sin descripción',
+                      style: _text(),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      "Tipo: ${d.tipoMantenimiento ?? 'No definido'}",
+                      style: _text(),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ================= COSTO TOTAL =================
+              _card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionTitle("Costo Total"),
+                    const SizedBox(height: 6),
+                    Text(
+                      d.costoTotal != null
+                          ? '\$${d.costoTotal!.toStringAsFixed(2)}'
+                          : 'No disponible',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           );
         },
       ),
