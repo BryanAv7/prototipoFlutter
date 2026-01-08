@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../services/API_route_service.dart';
 import '../services/ruta_service.dart';
+import '../services/locationservice.dart';
 import '../models/ruta.dart';
 import '../utils/token_manager.dart';
 
@@ -18,6 +19,7 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
   final TextEditingController _nombreCtrl = TextEditingController();
   final TextEditingController _descripcionCtrl = TextEditingController();
 
+  LatLng? _ubicacionActual;
   LatLng? _origen;
   LatLng? _destino;
   List<LatLng> _polylinePoints = [];
@@ -27,12 +29,44 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
 
   bool _calculando = false;
   bool _guardando = false;
+  bool _cargandoUbicacion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _solicitarUbicacion();
+  }
 
   @override
   void dispose() {
     _nombreCtrl.dispose();
     _descripcionCtrl.dispose();
+    _mapController.dispose();
     super.dispose();
+  }
+
+  // Solicitar ubicación al entrar
+  Future<void> _solicitarUbicacion() async {
+    setState(() => _cargandoUbicacion = true);
+
+    final ubicacion = await LocationService.obtenerUbicacionActual();
+
+    setState(() {
+      _ubicacionActual = ubicacion;
+      _origen = ubicacion;
+      _cargandoUbicacion = false;
+    });
+
+    if (ubicacion != null) {
+      _mapController.move(ubicacion, 15.0);
+    }
+  }
+
+  // Establecer origen como ubicación actual
+  void _establecerOrigenActual() {
+    if (_ubicacionActual != null) {
+      setState(() => _origen = _ubicacionActual);
+    }
   }
 
   @override
@@ -93,6 +127,26 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
                 ),
               MarkerLayer(
                 markers: [
+                  // Marcador ubicación actual
+                  if (_ubicacionActual != null)
+                    Marker(
+                      point: _ubicacionActual!,
+                      width: 40,
+                      height: 40,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFFFD700),
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.black,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  // Marcador origen
                   if (_origen != null)
                     Marker(
                       point: _origen!,
@@ -104,6 +158,7 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
                         size: 40,
                       ),
                     ),
+                  // Marcador destino
                   if (_destino != null)
                     Marker(
                       point: _destino!,
@@ -119,6 +174,8 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
               ),
             ],
           ),
+
+          // Panel superior
           Positioned(
             top: 16,
             left: 16,
@@ -212,6 +269,29 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
               ),
             ),
           ),
+
+          // Botón ubicación actual
+          Positioned(
+            bottom: 160,
+            right: 16,
+            child: FloatingActionButton(
+              backgroundColor: const Color(0xFFFFD700),
+              onPressed: _cargandoUbicacion ? null : _establecerOrigenActual,
+              tooltip: 'Usar ubicación actual',
+              child: _cargandoUbicacion
+                  ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                ),
+              )
+                  : const Icon(Icons.my_location, color: Colors.black),
+            ),
+          ),
+
+          // Botones inferiores
           if (_origen != null && _destino != null)
             Positioned(
               bottom: 16,
@@ -304,12 +384,6 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
     setState(() => _calculando = false);
 
     if (resultado == null || resultado['success'] != true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(resultado?['error'] ?? 'Error al calcular ruta'),
-          backgroundColor: Colors.red,
-        ),
-      );
       return;
     }
 
@@ -402,12 +476,6 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
 
   Future<void> _guardarRuta() async {
     if (_nombreCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa un nombre para la ruta'),
-          backgroundColor: Colors.orange,
-        ),
-      );
       return;
     }
 
@@ -416,12 +484,6 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
     final userMap = await TokenManager.getUserJson();
     if (userMap == null) {
       setState(() => _guardando = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Usuario no encontrado'),
-          backgroundColor: Colors.red,
-        ),
-      );
       return;
     }
 
@@ -447,13 +509,6 @@ class _CrearRutaPageState extends State<CrearRutaPage> {
 
     if (resultado != null && resultado['success'] == true) {
       Navigator.pop(context, true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(resultado?['error'] ?? 'Error al guardar ruta'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 }
