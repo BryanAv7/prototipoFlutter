@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/RegistroDetalleDTO.dart';
+import '../models/DetalleFacturaDTO.dart';
 import '../services/registros_service.dart';
 
 class HistorialMantenimientosPage extends StatefulWidget {
@@ -747,6 +748,12 @@ class _HistorialMantenimientosPageState
                     const SizedBox(height: 12),
                   ],
 
+                  // DESPLEGABLE DE DETALLES DE FACTURA
+                  if (registro.idFactura != null) ...[
+                    _buildDetallesFacturaExpansion(registro.idFactura!),
+                    const SizedBox(height: 12),
+                  ],
+
                   // ========== OBSERVACIONES ==========
                   if (registro.descripcion != null &&
                       registro.descripcion!.isNotEmpty) ...[
@@ -787,6 +794,139 @@ class _HistorialMantenimientosPageState
                     ),
                   ],
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  //  DETALLES DE FACTURA
+  Widget _buildDetallesFacturaExpansion(int idFactura) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          iconColor: Colors.blue,
+          collapsedIconColor: Colors.blue,
+          backgroundColor: Colors.blue.withOpacity(0.05),
+          collapsedBackgroundColor: Colors.blue.withOpacity(0.05),
+          title: Row(
+            children: [
+              Icon(Icons.receipt, color: Colors.blue, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                'Detalles de Factura',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: FutureBuilder<List<DetalleFacturaDTO>>(
+                future: RegistrosService.obtenerDetallesFactura(idFactura),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(
+                        color: Colors.blue,
+                        strokeWidth: 2,
+                      ),
+                    );
+                  } else if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        'Error al cargar detalles',
+                        style: TextStyle(color: Colors.red.shade300),
+                      ),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text(
+                        'No hay detalles disponibles',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+                    );
+                  }
+
+                  final detalles = snapshot.data!;
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: detalles.length,
+                    separatorBuilder: (_, __) => Divider(
+                      color: Colors.white12,
+                      height: 12,
+                    ),
+                    itemBuilder: (context, index) {
+                      final detalle = detalles[index];
+                      return Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.03),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Descripción del producto/servicio
+                            Text(
+                              'Productos:\n${detalle.descripcion}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            // Cantidad, precio y subtotal en fila
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Cantidad: ${detalle.cantidad}',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  'Precio: \$${detalle.precioUnitario.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  'Subtotal: \$${detalle.subtotal.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: Colors.yellow,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],

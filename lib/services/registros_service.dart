@@ -7,6 +7,7 @@ import '../models/RegistroDetalleDTO.dart';
 import '../models/registro_dto.dart';
 import '../models/mantenimiento.dart';
 import '../utils/token_manager.dart';
+import '../models/DetalleFacturaDTO.dart';
 
 /*
 REGISTROSSERVICE.DART
@@ -164,6 +165,39 @@ class RegistrosService {
       }
     } catch (e) {
       print('Error en obtenerHistorialMantenimientos: $e');
+      rethrow;
+    }
+  }
+
+  // OBTENER DETALLES DE FACTURA
+  static Future<List<DetalleFacturaDTO>> obtenerDetallesFactura(int idFactura) async {
+    try {
+      final uri = await _buildUrl('/$idFactura/detalles-factura');
+
+      final token = await TokenManager.getToken();
+      if (token == null) {
+        print('No hay token disponible');
+        throw Exception("No hay token de autenticación");
+      }
+
+      final response = await http.get(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      //print("[RegistrosService] DETALLES FACTURA $idFactura → ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+        return data.map((e) => DetalleFacturaDTO.fromJson(e)).toList();
+      } else {
+        throw Exception("Error al cargar detalles de factura: ${response.statusCode} ${response.reasonPhrase}");
+      }
+    } catch (e) {
+      print('Error en obtenerDetallesFactura: $e');
       rethrow;
     }
   }
