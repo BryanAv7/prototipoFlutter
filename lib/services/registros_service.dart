@@ -202,6 +202,50 @@ class RegistrosService {
     }
   }
 
+  // =====================================================
+  // ACTUALIZAR FACTURA (PUT /api/registros/{idRegistro}/factura)
+  // =====================================================
+  static Future<Map<String, dynamic>?> actualizarFactura(
+      int idRegistro,
+      List<Map<String, dynamic>> detalles,
+      ) async {
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        throw Exception("IP del servidor no configurada");
+      }
+
+      final url = Uri.parse('$baseUrl/registros/$idRegistro/factura');
+
+      final token = await TokenManager.getToken();
+      if (token == null) {
+        print('No hay token disponible');
+        return null;
+      }
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(detalles),
+      );
+
+      print("[RegistrosService] ACTUALIZAR FACTURA $idRegistro → ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Error al actualizar factura: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Error en actualizarFactura: $e');
+      rethrow;
+    }
+  }
+
   // ================= BUSCAR POR NOMBRE DE CLIENTE =================
   static Future<List<RegistroDetalleDTO>> buscarHistorialPorNombre(String nombreCliente) async {
     try {
