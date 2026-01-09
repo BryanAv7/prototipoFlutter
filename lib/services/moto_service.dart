@@ -177,6 +177,7 @@ class MotoService {
             'idMoto': data['idMoto'],
             'placa': data['placa'],
             'modelo': data['modelo'],
+            'nombreMoto': data['nombreMoto'],
             'marca': data['marca'],
           };
         } else {

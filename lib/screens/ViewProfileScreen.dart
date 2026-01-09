@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'EditProfileScreen.dart';
 import 'AddMotorcycleScreen.dart';
 import 'ViewMotorcycleScreen.dart';
@@ -94,6 +95,33 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
         ],
       ),
     );
+  }
+
+  // Método para abrir URL
+  Future<void> _launchURL(String url) async {
+    try {
+      // ignore: deprecated_member_use
+      if (await canLaunch(url)) {
+        // ignore: deprecated_member_use
+        await launch(url);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo abrir el formulario'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -255,9 +283,52 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
+                      // Botón con diálogo
                       ElevatedButton(
                         onPressed: () {
-                          print('Compartir perfil');
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: const Color(0xFF1E1E1E),
+                              title: const Text(
+                                'Formulario de Satisfacción',
+                                style: TextStyle(
+                                  color: Color(0xFFFFD700),
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              content: const Text(
+                                'Nos gustaría conocer tu opinión sobre la aplicación. ¿Te gustaría continuar?',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text(
+                                    'Cancelar',
+                                    style: TextStyle(color: Colors.white54),
+                                  ),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _launchURL('https://forms.gle/z2tH1Vm2dYAv9wNs5'); // Enlace del Formulario
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFD700),
+                                  ),
+                                  child: const Text(
+                                    'Continuar',
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2B2B2B),
@@ -271,7 +342,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                           padding: const EdgeInsets.all(12),
                         ),
                         child: const Icon(
-                          Icons.share,
+                          Icons.assignment_outlined,
                           color: Color(0xFFFFD700),
                           size: 20,
                         ),
@@ -423,97 +494,140 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                       }
                     });
                   },
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFFFFD700)
-                            : Colors.white24,
-                        width: isSelected ? 2 : 1,
+                  // Stack con banner lateral
+                  child: Stack(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E1E),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFFFFD700)
+                                : Colors.white24,
+                            width: isSelected ? 2 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                            BoxShadow(
+                              color: const Color(0xFFFFD700)
+                                  .withOpacity(0.3),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                              : [],
+                        ),
+                        child: Row(
+                          children: [
+                            // Imagen de la moto
+                            Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2B2B2B),
+                                borderRadius: BorderRadius.circular(10),
+                                image: motoItem.ruta_imagenMotos != null &&
+                                    motoItem.ruta_imagenMotos!.isNotEmpty
+                                    ? DecorationImage(
+                                  image: NetworkImage(
+                                      motoItem.ruta_imagenMotos!),
+                                  fit: BoxFit.cover,
+                                )
+                                    : null,
+                              ),
+                              child: (motoItem.ruta_imagenMotos == null ||
+                                  motoItem.ruta_imagenMotos!.isEmpty)
+                                  ? Icon(
+                                Icons.motorcycle,
+                                color: Colors.white.withOpacity(0.3),
+                                size: 35,
+                              )
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            // Info de la moto
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${motoItem.marca ?? '-'} ${motoItem.modelo ?? '-'}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  buildMotoRow(
+                                    'Placa',
+                                    motoItem.placa ?? '-',
+                                    'Año',
+                                    motoItem.anio?.toString() ?? '-',
+                                  ),
+                                  buildMotoRow(
+                                    'Km',
+                                    '${motoItem.kilometraje?.toString() ?? '-'} km',
+                                    'CC',
+                                    '${motoItem.cilindraje?.toString() ?? '-'} cc',
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Indicador de selección
+                            if (isSelected)
+                              const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFFFFD700),
+                                size: 24,
+                              ),
+                          ],
+                        ),
                       ),
-                      boxShadow: isSelected
-                          ? [
-                        BoxShadow(
-                          color: const Color(0xFFFFD700)
-                              .withOpacity(0.3),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                          : [],
-                    ),
-                    child: Row(
-                      children: [
-                        // Imagen de la moto
-                        Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2B2B2B),
-                            borderRadius: BorderRadius.circular(10),
-                            image: motoItem.ruta_imagenMotos != null &&
-                                motoItem.ruta_imagenMotos!.isNotEmpty
-                                ? DecorationImage(
-                              image: NetworkImage(
-                                  motoItem.ruta_imagenMotos!),
-                              fit: BoxFit.cover,
-                            )
-                                : null,
-                          ),
-                          child: (motoItem.ruta_imagenMotos == null ||
-                              motoItem.ruta_imagenMotos!.isEmpty)
-                              ? Icon(
-                            Icons.motorcycle,
-                            color: Colors.white.withOpacity(0.3),
-                            size: 35,
-                          )
-                              : null,
-                        ),
-                        const SizedBox(width: 12),
-                        // Info de la moto
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${motoItem.marca ?? '-'} ${motoItem.modelo ?? '-'}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                      // Banner con nombre de la Moto
+                      if (motoItem.nombreMoto != null &&
+                          motoItem.nombreMoto!.isNotEmpty &&
+                          motoItem.nombreMoto != 'N/A')
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700),
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(12),
+                                bottomLeft: Radius.circular(12),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.4),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              ],
+                            ),
+                            child: Text(
+                              motoItem.nombreMoto!,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
                               ),
-                              const SizedBox(height: 8),
-                              buildMotoRow(
-                                'Placa',
-                                motoItem.placa ?? '-',
-                                'Año',
-                                motoItem.anio?.toString() ?? '-',
-                              ),
-                              buildMotoRow(
-                                'Km',
-                                '${motoItem.kilometraje?.toString() ?? '-'} km',
-                                'CC',
-                                '${motoItem.cilindraje?.toString() ?? '-'} cc',
-                              ),
-                            ],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
-                        // Indicador de selección
-                        if (isSelected)
-                          const Icon(
-                            Icons.check_circle,
-                            color: Color(0xFFFFD700),
-                            size: 24,
-                          ),
-                      ],
-                    ),
+                    ],
                   ),
                 );
               },

@@ -188,13 +188,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 15),
 
                         _buildField(
-                          correoCtrl,
-                          "Correo Electrónico",
-                          isEmail: true
+                            correoCtrl,
+                            "Correo Electrónico",
+                            isEmail: true
                         ),
                         const SizedBox(height: 15),
 
-                        // CONTRASEÑA
+                        // Contraseña
                         TextField(
                           controller: contrasenaCtrl,
                           obscureText: _obscurePassword,
@@ -202,6 +202,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           decoration: InputDecoration(
                             hintText: 'Contraseña',
                             hintStyle: const TextStyle(color: Colors.grey),
+                            label: RichText(
+                              text: const TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'Contraseña',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                  TextSpan(
+                                    text: ' *',
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             filled: true,
                             fillColor: Colors.grey[850],
                             border: OutlineInputBorder(
@@ -211,6 +229,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Colors.yellow),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.yellow, width: 2),
                             ),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -291,7 +313,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Reutilizable
+  // * Campos Obligatorios
   Widget _buildField(TextEditingController ctrl, String hint,
       {bool isEmail = false}) {
     return TextField(
@@ -300,6 +322,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey),
+        label: RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: hint,
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const TextSpan(
+                text: ' *',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
         filled: true,
         fillColor: Colors.grey[850],
         suffixIcon: isEmail ? _correoSuffix : null,
@@ -310,6 +350,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.yellow),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.yellow, width: 2),
         ),
       ),
     );

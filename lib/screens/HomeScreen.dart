@@ -6,6 +6,7 @@ import '../utils/token_manager.dart';
 import 'dart:convert';
 import '../screens/InventarioScreen.dart';
 import '../screens/HistorialMantenimientosPage.dart';
+import '../screens/CrearRutaScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -83,6 +84,11 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
+      );
+    } else if (index == 1) {  // Mapa
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CrearRutaPage()),
       );
     } else {
       setState(() {

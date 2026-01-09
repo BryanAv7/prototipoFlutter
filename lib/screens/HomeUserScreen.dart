@@ -5,6 +5,7 @@ import '../utils/token_manager.dart';
 import 'dart:convert';
 import 'RutasMenuScreen.dart';
 import 'VerMisMantenimientos.dart';
+import '../screens/CrearRutaScreen.dart';
 
 class HomeUserScreen extends StatefulWidget {
   const HomeUserScreen({super.key});
@@ -66,6 +67,11 @@ class _HomeUserScreenState extends State<HomeUserScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
+      );
+    } else if (index == 1) {  // Mapa
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CrearRutaPage()),
       );
     } else {
       setState(() {

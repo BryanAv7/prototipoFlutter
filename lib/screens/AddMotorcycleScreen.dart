@@ -16,6 +16,7 @@ class AddMotorcycleScreen extends StatefulWidget {
 
 class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
   late TextEditingController marcaController;
+  late TextEditingController nombreMotoController;
   late TextEditingController modeloController;
   late TextEditingController placaController;
   late TextEditingController kilometrajeController;
@@ -39,6 +40,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
   void initState() {
     super.initState();
     marcaController = TextEditingController();
+    nombreMotoController = TextEditingController();
     modeloController = TextEditingController();
     placaController = TextEditingController();
     kilometrajeController = TextEditingController();
@@ -49,6 +51,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
   @override
   void dispose() {
     marcaController.dispose();
+    nombreMotoController.dispose();
     modeloController.dispose();
     placaController.dispose();
     kilometrajeController.dispose();
@@ -333,12 +336,16 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
       }
     }
 
+    // nombreMoto predeterminado, envía "N/A"
     final moto = Moto(
       id_moto: null,
       placa: placaController.text.trim().toUpperCase(),
       anio: anio,
       marca: marcaController.text.trim(),
       modelo: modeloController.text.trim(),
+      nombreMoto: nombreMotoController.text.trim().isEmpty
+          ? 'N/A'
+          : nombreMotoController.text.trim(),
       tipoMoto: selectedTipoMoto!,
       kilometraje: kilometraje,
       cilindraje: cilindraje,
@@ -432,9 +439,17 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
             ),
             const SizedBox(height: 20),
 
-            _buildTextField('Marca', controller: marcaController),
+            // Campo nombreMoto (Campo Opcional)
+            _buildTextField(
+              'Nombre',
+              controller: nombreMotoController,
+              hint: 'Ej: La Poderosa',
+            ),
             const SizedBox(height: 15),
-            _buildTextField('Modelo', controller: modeloController),
+
+            _buildTextField('Marca', controller: marcaController, isRequired: true),
+            const SizedBox(height: 15),
+            _buildTextField('Modelo', controller: modeloController, isRequired: true),
             const SizedBox(height: 15),
 
             // Campo placa
@@ -443,8 +458,24 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
               style: const TextStyle(color: Colors.white),
               textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
-                labelText: 'Placa',
-                labelStyle: const TextStyle(color: Colors.grey),
+                label: RichText(
+                  text: const TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'Placa',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      TextSpan(
+                        text: ' *',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 hintText: 'Ej: ABC-123',
                 hintStyle: const TextStyle(color: Colors.grey),
                 filled: true,
@@ -474,11 +505,12 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
             _buildTextField('Kilometraje',
                 controller: kilometrajeController,
                 hint: 'Ej: 15000',
-                keyboardType: TextInputType.number),
+                keyboardType: TextInputType.number,
+                isRequired: true),
             const SizedBox(height: 15),
 
             _buildDropdownField(
-              label: 'Tipo',
+              label: 'Tipo *',
               value: selectedTipoMoto,
               onChanged: (value) => setState(() => selectedTipoMoto = value),
               items: tiposMoto,
@@ -488,10 +520,12 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
             _buildTextField('Año',
                 controller: anioController,
                 hint: 'Ej: 2022',
-                keyboardType: TextInputType.number),
+                keyboardType: TextInputType.number,
+                isRequired: true),
             const SizedBox(height: 15),
             _buildTextField('Cilindraje',
-                controller: cilindrajeController, hint: 'Ej: 650'),
+                controller: cilindrajeController, hint: 'Ej: 650',
+                isRequired: true),
 
             const SizedBox(height: 30),
 
@@ -520,14 +554,28 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         required TextEditingController controller,
         String? hint,
         TextInputType keyboardType = TextInputType.text,
+        bool isRequired = false,
       }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.grey),
+        label: RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: label,
+                style: const TextStyle(color: Colors.grey),
+              ),
+              if (isRequired)  // Campos oblogatorios
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+            ],
+          ),
+        ),
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey),
         filled: true,
@@ -554,10 +602,30 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     required ValueChanged<String?> onChanged,
     required List<String> items,
   }) {
+    final isRequired = label.contains('*');
+    final cleanLabel = label.replaceAll(' *', '');
+
     return InputDecorator(
       decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.grey),
+        label: RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: cleanLabel,
+                style: const TextStyle(color: Colors.grey),
+              ),
+              if (isRequired)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+            ],
+          ),
+        ),
         filled: true,
         fillColor: Colors.grey[850],
         border: OutlineInputBorder(

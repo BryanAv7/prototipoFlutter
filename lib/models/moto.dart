@@ -4,6 +4,7 @@ class Moto {
   final int? anio;
   final String? marca;
   final String? modelo;
+  final String? nombreMoto;
   final String? tipoMoto;
   final int? kilometraje;
   final int? cilindraje;
@@ -16,6 +17,7 @@ class Moto {
     this.anio,
     this.marca,
     this.modelo,
+    this.nombreMoto,
     this.tipoMoto,
     this.kilometraje,
     this.cilindraje,
@@ -33,6 +35,7 @@ class Moto {
       anio: json['anio'],
       marca: json['marca'],
       modelo: json['modelo'],
+      nombreMoto: json['nombreMoto'],
       tipoMoto: json['tipoMoto'],
       kilometraje: json['kilometraje'],
       cilindraje: json['cilindraje'],
@@ -49,6 +52,7 @@ class Moto {
       'anio': anio,
       'marca': marca,
       'modelo': modelo,
+      'nombreMoto': nombreMoto,
       'kilometraje': kilometraje,
       'cilindraje': cilindraje,
       'ruta_imagenMotos': ruta_imagenMotos,  // Backend usa mixed case
@@ -60,6 +64,6 @@ class Moto {
   // ✅ EXTRA: toString para debugging
   @override
   String toString() {
-    return 'Moto(id: $id_moto, placa: $placa, marca: $marca, modelo: $modelo, usuario: $id_usuario)';
+    return 'Moto(id: $id_moto, placa: $placa, nombreMoto: $nombreMoto, marca: $marca, modelo: $modelo, usuario: $id_usuario)';
   }
 }

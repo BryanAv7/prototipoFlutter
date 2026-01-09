@@ -19,6 +19,7 @@ class _ViewMotorcycleScreenState extends State<ViewMotorcycleScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController marcaController;
+  late TextEditingController nombreMotoController;
   late TextEditingController modeloController;
   late TextEditingController placaController;
   late TextEditingController anioController;
@@ -31,6 +32,7 @@ class _ViewMotorcycleScreenState extends State<ViewMotorcycleScreen> {
   @override
   void initState() {
     super.initState();
+    nombreMotoController = TextEditingController(text: widget.moto.nombreMoto ?? '');
     marcaController = TextEditingController(text: widget.moto.marca ?? '');
     modeloController = TextEditingController(text: widget.moto.modelo ?? '');
     placaController = TextEditingController(text: widget.moto.placa ?? '');
@@ -41,6 +43,7 @@ class _ViewMotorcycleScreenState extends State<ViewMotorcycleScreen> {
 
   @override
   void dispose() {
+    nombreMotoController.dispose();
     marcaController.dispose();
     modeloController.dispose();
     placaController.dispose();
@@ -287,6 +290,7 @@ class _ViewMotorcycleScreenState extends State<ViewMotorcycleScreen> {
       anio: int.tryParse(anioController.text),
       marca: marcaController.text.trim(),
       modelo: modeloController.text.trim(),
+      nombreMoto: nombreMotoController.text.trim(),
       tipoMoto: widget.moto.tipoMoto,
       kilometraje: int.tryParse(kilometrajeController.text),
       cilindraje: int.tryParse(cilindrajeController.text),
@@ -400,6 +404,8 @@ class _ViewMotorcycleScreenState extends State<ViewMotorcycleScreen> {
 
               const SizedBox(height: 30),
 
+              _buildTextField('Nombre', controller: nombreMotoController),
+              const SizedBox(height: 15),
               _buildTextField('Marca', controller: marcaController),
               const SizedBox(height: 15),
               _buildTextField('Modelo', controller: modeloController),
