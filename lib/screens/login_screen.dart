@@ -4,6 +4,7 @@ import '../config/api.dart';
 import 'HomeScreen.dart';
 import 'RegisterScreen.dart';
 import 'HomeUserScreen.dart';
+import '../screens/forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -348,11 +349,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
-                            child: const Text(
-                              '¿Olvidaste tu contraseña?',
-                              style: TextStyle(color: Colors.red),
-                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const OlvideContrasenaScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('¿Olvidaste tu contraseña?', style: TextStyle(color: Colors.red)),
                           ),
                         ),
 
