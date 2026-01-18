@@ -8,6 +8,7 @@ import '../screens/InventarioScreen.dart';
 import '../screens/HistorialMantenimientosPage.dart';
 import '../screens/CrearRutaScreen.dart';
 import '../screens/AppInfoScreen.dart';
+import '../screens/QuickAccountCreationScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -94,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(builder: (context) => const CrearRutaPage()),
       );
     } else if (index == 2) {
-      // ✅ INFORMACIÓN
+      // INFORMACIÓN
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const AppInfoScreen()),
@@ -207,6 +208,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 });
               },
             ),
+
+            // ============== CREAR CUENTAS ==============
+            _DashboardCard(
+              icon: Icons.person_add,
+              label: 'Crear Cuentas',
+              selected: _selectedCardIndex == 5,
+              onTap: () {
+                setState(() => _selectedCardIndex = 5);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const QuickAccountCreationScreen(),
+                  ),
+                ).then((_) {
+                  setState(() => _selectedCardIndex = -1);
+                });
+              },
+            ),
           ],
         ),
       )
@@ -224,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: ''), // ✅ ICONO DE AYUDA
+          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
