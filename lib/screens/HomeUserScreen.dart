@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'RutasMenuScreen.dart';
 import 'VerMisMantenimientos.dart';
 import '../screens/CrearRutaScreen.dart';
+import '../screens/AppInfoScreen.dart';
 
 class HomeUserScreen extends StatefulWidget {
   const HomeUserScreen({super.key});
@@ -58,12 +59,13 @@ class _HomeUserScreenState extends State<HomeUserScreen> {
   final List<Widget Function(BuildContext)> _screens = [
         (context) => const Center(child: Text('Inicio', style: TextStyle(color: Colors.white))),
         (context) => const Center(child: Text('Mapa', style: TextStyle(color: Colors.white))),
-        (context) => const Center(child: Text('Buscar', style: TextStyle(color: Colors.white))),
+        (context) => const Center(child: Text('Información', style: TextStyle(color: Colors.white))),
         (context) => const Center(child: Text('Notificaciones', style: TextStyle(color: Colors.white))),
   ];
 
   void _onItemTapped(int index) {
     if (index == 4) {
+      // Perfil
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
@@ -72,6 +74,11 @@ class _HomeUserScreenState extends State<HomeUserScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const CrearRutaPage()),
+      );
+    } else if (index == 2) {  // Información de la APP
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AppInfoScreen()),
       );
     } else {
       setState(() {
@@ -151,7 +158,7 @@ class _HomeUserScreenState extends State<HomeUserScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: ''), // ✅ ICONO DE AYUDA
           BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],

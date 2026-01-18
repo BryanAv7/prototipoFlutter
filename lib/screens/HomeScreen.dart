@@ -7,6 +7,7 @@ import 'dart:convert';
 import '../screens/InventarioScreen.dart';
 import '../screens/HistorialMantenimientosPage.dart';
 import '../screens/CrearRutaScreen.dart';
+import '../screens/AppInfoScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -74,21 +75,29 @@ class _HomeScreenState extends State<HomeScreen> {
         (context) =>
     const Center(child: Text('Mapa', style: TextStyle(color: Colors.white))),
         (context) =>
-    const Center(child: Text('Buscar', style: TextStyle(color: Colors.white))),
+    const Center(child: Text('Información', style: TextStyle(color: Colors.white))),
         (context) => const Center(
         child: Text('Notificaciones', style: TextStyle(color: Colors.white))),
   ];
 
   void _onItemTapped(int index) {
     if (index == 4) {
+      // Perfil
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
       );
-    } else if (index == 1) {  // Mapa
+    } else if (index == 1) {
+      // Mapa
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const CrearRutaPage()),
+      );
+    } else if (index == 2) {
+      // ✅ INFORMACIÓN
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AppInfoScreen()),
       );
     } else {
       setState(() {
@@ -215,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: ''), // ✅ ICONO DE AYUDA
           BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
