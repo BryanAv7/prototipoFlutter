@@ -7,6 +7,7 @@ import '../models/usuario.dart';
 import '../models/moto.dart';
 import '../services/moto_service.dart';
 import '../utils/token_manager.dart';
+import '../services/auth_service.dart';
 
 class ViewProfileScreen extends StatefulWidget {
   const ViewProfileScreen({super.key});
@@ -20,6 +21,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
   List<Moto> motos = [];
   bool isLoading = true;
   int? selectedMotoIndex;
+  int? userRole; // Para almacenar el rol del usuario
 
   @override
   void initState() {
@@ -32,10 +34,60 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     if (jsonMap != null) {
       usuario = Usuario.fromJson(jsonMap);
       motos = await MotoService.listarMotosPorUsuario(usuario!.idUsuario!);
+
+      // Obtener el Rol del Usuario
+      userRole = await _obtenerRolUsuario(usuario!.idUsuario!);
     }
     setState(() {
       isLoading = false;
     });
+  }
+
+  // Obtener rol del usuario
+  Future<int?> _obtenerRolUsuario(int idUsuario) async {
+    try {
+      // Aquí llamas a tu servicio para obtener los roles
+      final roles = await AuthService.obtenerRolesUsuario(idUsuario);
+
+      if (roles != null && roles.isNotEmpty) {
+        final rolPrincipal = roles[0] as Map<String, dynamic>;
+        return rolPrincipal['idRol'] as int?;
+      }
+      return null;
+    } catch (e) {
+      print('Error obteniendo rol: $e');
+      return null;
+    }
+  }
+
+  // Obtener URL según rol
+  String _obtenerEnlaceFormulario() {
+    if (userRole == 2) {
+      // CLIENTE - Formulario de usuarios
+      return 'https://forms.gle/z2tH1Vm2dYAv9wNs5';
+    } else if (userRole == 3) {
+      // MECANICO - Formulario de mecánicos
+      return 'https://forms.gle/AQCmxEGBsvGmUjTT8';
+    } else if (userRole == 1) {
+      // ADMIN - Formulario de administrador
+      return 'https://forms.gle/AQCmxEGBsvGmUjTT8';
+    } else {
+      // Rol desconocido - Sin formulario disponible
+      return 'null';
+    }
+  }
+
+// Obtener texto según rol
+  String _obtenerTextoFormulario() {
+    if (userRole == 2) {
+      return 'Formulario de Satisfacción - Cliente';
+    } else if (userRole == 3) {
+      return 'Formulario de Satisfacción - Mecánico';
+    } else if (userRole == 1) {
+      return 'Formulario de Satisfacción - Administrador';
+    } else {
+      return 'Rol no identificado';
+    }
   }
 
   Widget buildMotoRow(String label1, String value1, String label2, String value2) {
@@ -283,16 +335,16 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Botón con diálogo
+                      // ✅ BOTÓN CON ENLACE SEGÚN ROL
                       ElevatedButton(
                         onPressed: () {
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
                               backgroundColor: const Color(0xFF1E1E1E),
-                              title: const Text(
-                                'Formulario de Satisfacción',
-                                style: TextStyle(
+                              title: Text(
+                                _obtenerTextoFormulario(),
+                                style: const TextStyle(
                                   color: Color(0xFFFFD700),
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -312,8 +364,22 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                                 ),
                                 ElevatedButton(
                                   onPressed: () {
+                                    String enlace = _obtenerEnlaceFormulario();
+
+                                    // Validar si el rol tiene formulario disponible
+                                    if (enlace == 'null') {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('No hay formulario disponible para tu rol'),
+                                          backgroundColor: Colors.orange,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
                                     Navigator.pop(context);
-                                    _launchURL('https://forms.gle/z2tH1Vm2dYAv9wNs5'); // Enlace del Formulario
+                                    _launchURL(enlace);
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFFFD700),
