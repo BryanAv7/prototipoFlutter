@@ -102,11 +102,76 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-      //MaterialPageRoute(builder: (context) => const HomeUserScreen()),
-    );
+    // Obtener Roles y Redireccionamiento
+    _redirigirSegunRol(response.usuario.idUsuario);
+  }
+
+  Future<void> _redirigirSegunRol(dynamic idUsuario) async {
+    try {
+      // Convertir a int si es necesario
+      final userId = idUsuario is int ? idUsuario : int.parse(idUsuario.toString());
+
+      //print('[LOGIN] Obteniendo roles para usuario ID: $userId');
+
+      final roles = await AuthService.obtenerRolesUsuario(userId);
+
+      if (!mounted) return;
+
+      if (roles != null && roles.isNotEmpty) {
+        // El primer rol es el principal
+        final rolPrincipal = roles[0] as Map<String, dynamic>;
+        final idRol = rolPrincipal['idRol'] as int?;
+
+        //print('[LOGIN] ID Rol: $idRol');
+
+        // Redirigir según el rol
+        if (idRol == 2) {
+          // CLIENTE
+          //print('[LOGIN] Redirigiendo a HomeUserScreen (CLIENTE)');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeUserScreen()),
+          );
+        } else if (idRol == 3) {
+          // MECANICO
+          //print('[LOGIN] Redirigiendo a HomeScreen (MECANICO)');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        } else if (idRol == 1) {
+          // ADMIN
+          print('[LOGIN] Redirigiendo a HomeScreen (ADMIN)');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeUserScreen()),
+          );
+        } else {
+          // Rol desconocido
+          //print('[LOGIN] Rol desconocido: $idRol, se direcciona a HomeScreen por defecto');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+      } else {
+        // Si no hay roles, ir a HomeScreen por defecto
+        //print('[LOGIN] Sin roles, yendo a HomeScreen por defecto');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
+    } catch (e) {
+      //print('[LOGIN] Error obteniendo roles: $e');
+      // En caso de error, ir a HomeScreen
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
+    }
   }
 
   void _showIpDialog() {

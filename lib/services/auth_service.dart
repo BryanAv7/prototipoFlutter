@@ -47,6 +47,40 @@ class AuthService {
     }
   }
 
+  // Obtener roles del usuario
+  static Future<List<dynamic>?> obtenerRolesUsuario(int idUsuario) async {
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        return null;
+      }
+
+      final token = await TokenManager.getToken();
+      final url = Uri.parse("$baseUrl/usuarios/$idUsuario/roles");
+
+      final response = await http.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          if (token != null) "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final roles = jsonDecode(response.body) as List<dynamic>;
+        //print('[ROLES] Roles obtenidos: $roles');
+        return roles;
+      }
+
+      //print('[ROLES] Error: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      //print('Error obteniendo roles: $e');
+      return null;
+    }
+  }
+
   static Future<void> logout() async {
     await TokenManager.clearAll();
   }
