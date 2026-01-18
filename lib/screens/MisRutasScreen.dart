@@ -3,6 +3,7 @@ import '../models/ruta.dart';
 import '../services/ruta_service.dart';
 import '../utils/token_manager.dart';
 import 'CrearRutaScreen.dart';
+import 'VerRutaScreen.dart';
 
 class MisRutasPage extends StatefulWidget {
   const MisRutasPage({super.key});
@@ -88,8 +89,7 @@ class _MisRutasPageState extends State<MisRutasPage> {
       ),
       body: _cargando
           ? const Center(
-        child:
-        CircularProgressIndicator(color: Color(0xFFFFD700)),
+        child: CircularProgressIndicator(color: Color(0xFFFFD700)),
       )
           : _rutas.isEmpty
           ? _buildEmptyState()
@@ -130,8 +130,7 @@ class _MisRutasPageState extends State<MisRutasPage> {
           color: const Color(0xFF1E1E1E),
           margin: const EdgeInsets.only(bottom: 10),
           child: ListTile(
-            leading:
-            const Icon(Icons.route, color: Color(0xFFFFD700)),
+            leading: const Icon(Icons.route, color: Color(0xFFFFD700)),
             title: Text(
               ruta.nombreRuta ?? 'Sin nombre',
               style: const TextStyle(color: Colors.white),
@@ -143,6 +142,15 @@ class _MisRutasPageState extends State<MisRutasPage> {
                 fontSize: 12,
               ),
             ),
+            // Ver Detalles Rutas
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VerRutaScreen(ruta: ruta),
+                ),
+              );
+            },
             trailing: IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: () => _eliminarRuta(ruta),
