@@ -811,26 +811,26 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
             child: Text(tipo.nombre),
           );
         }).toList(),
+
         onChanged: (value) async {
-          // Perfiles
           if (value != null) {
             final tipoSeleccionado = await TipoService.obtenerPorId(value);
 
             setState(() {
               idTipoSeleccionado = value;
 
-              // Si el tipo tiene producto, agregarlo automáticamente
               if (tipoSeleccionado != null &&
                   tipoSeleccionado.producto != null &&
-                  tipoSeleccionado.costo_servicio != null) {
+                  tipoSeleccionado.productoPvp != null) {
 
-                // Crear un detalle automático con el producto del tipo
+
                 final detalleAutomatico = DetalleUI(
                   idProducto: tipoSeleccionado.producto!.id_producto,
-                  nombre: tipoSeleccionado.nombre,
+                  nombre: tipoSeleccionado.producto!.nombre,
                   cantidad: 1,
-                  precioUnitario: tipoSeleccionado.costo_servicio!,
+                  precioUnitario: tipoSeleccionado.productoPvp!,
                   esProducto: true,
+                  imagenUrl: tipoSeleccionado.producto!.rutaImagenProductos,
                 );
 
                 // Agregar a detalles si no está ya

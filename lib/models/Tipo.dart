@@ -1,10 +1,9 @@
-// Esta clase sirve para mostrar de que manera esta estructurada Tipo
-// Que representa el tipo de mantenimiento
+// ignore_for_file: file_names
+
 class Tipo {
   final int idTipo;
   final String nombre;
-  final String? descripcion;
-  final double? costo_servicio;
+  final String descripcion;
   final Producto? producto;
   final String? conceptoManual;
   final int? conceptoCantidad;
@@ -13,8 +12,7 @@ class Tipo {
   Tipo({
     required this.idTipo,
     required this.nombre,
-    this.descripcion,
-    this.costo_servicio,
+    required this.descripcion,
     this.producto,
     this.conceptoManual,
     this.conceptoCantidad,
@@ -23,66 +21,61 @@ class Tipo {
 
   factory Tipo.fromJson(Map<String, dynamic> json) {
     return Tipo(
-      idTipo: json['id_tipo'],
-      nombre: json['nombre'],
-      descripcion: json['descripcion'],
-      costo_servicio: json['costo_servicio'] != null
-          ? double.parse(json['costo_servicio'].toString())
-          : null,
+      idTipo: json['id_tipo'] ?? json['idTipo'] ?? 0,
+      nombre: json['nombre'] ?? '',
+      descripcion: json['descripcion'] ?? '',
       producto: json['producto'] != null
           ? Producto.fromJson(json['producto'])
           : null,
-      conceptoManual: json['concepto_manual'],
-      conceptoCantidad: json['concepto_cantidad'],
+      conceptoManual: json['concepto_manual'] ?? json['conceptoManual'],
+      conceptoCantidad: json['concepto_cantidad'] ?? json['conceptoCantidad'],
       conceptoPrecioUnitario: json['concepto_precio_unitario'] != null
           ? double.parse(json['concepto_precio_unitario'].toString())
           : null,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id_tipo': idTipo,
-      'nombre': nombre,
-      'descripcion': descripcion,
-      'costo_servicio': costo_servicio,
-      'producto': producto?.toJson(),
-      'concepto_manual': conceptoManual,
-      'concepto_cantidad': conceptoCantidad,
-      'concepto_precio_unitario': conceptoPrecioUnitario,
-    };
+  // ======== GETTERS ========
+
+  /// Obtiene el PVP del producto asociado
+  double? get productoPvp {
+    return producto?.pvp;
+  }
+
+  /// Obtiene el precio final (concepto manual si existe, sino del producto)
+  double? get precioFinal {
+    if (conceptoPrecioUnitario != null && conceptoPrecioUnitario! > 0) {
+      return conceptoPrecioUnitario;
+    }
+    return productoPvp;
   }
 }
 
-// Clase Producto (si no la tienes)
 class Producto {
   final int id_producto;
   final String nombre;
-  final String descripcion;
   final double pvp;
+  final String? descripcion;
+  final int? stock;
+  final String? rutaImagenProductos;
 
   Producto({
     required this.id_producto,
     required this.nombre,
-    required this.descripcion,
     required this.pvp,
+    this.descripcion,
+    this.stock,
+    this.rutaImagenProductos,
   });
 
   factory Producto.fromJson(Map<String, dynamic> json) {
     return Producto(
-      id_producto: json['id_producto'],
-      nombre: json['nombre'],
-      descripcion: json['descripcion'],
+      id_producto: json['id_producto'] ?? 0,
+      nombre: json['nombre'] ?? '',
       pvp: double.parse(json['pvp'].toString()),
+      descripcion: json['descripcion'],
+      stock: json['stock'],
+      rutaImagenProductos: json['ruta_imagenproductos'] ?? '',
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id_producto': id_producto,
-      'nombre': nombre,
-      'descripcion': descripcion,
-      'pvp': pvp,
-    };
   }
 }
