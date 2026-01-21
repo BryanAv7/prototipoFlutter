@@ -811,8 +811,39 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
             child: Text(tipo.nombre),
           );
         }).toList(),
-        onChanged: (value) {
-          setState(() => idTipoSeleccionado = value);
+        onChanged: (value) async {
+          // Perfiles
+          if (value != null) {
+            final tipoSeleccionado = await TipoService.obtenerPorId(value);
+
+            setState(() {
+              idTipoSeleccionado = value;
+
+              // Si el tipo tiene producto, agregarlo automáticamente
+              if (tipoSeleccionado != null &&
+                  tipoSeleccionado.producto != null &&
+                  tipoSeleccionado.costo_servicio != null) {
+
+                // Crear un detalle automático con el producto del tipo
+                final detalleAutomatico = DetalleUI(
+                  idProducto: tipoSeleccionado.producto!.id_producto,
+                  nombre: tipoSeleccionado.nombre,
+                  cantidad: 1,
+                  precioUnitario: tipoSeleccionado.costo_servicio!,
+                  esProducto: true,
+                );
+
+                // Agregar a detalles si no está ya
+                if (!detallesSeleccionados.any((d) => d.idProducto == tipoSeleccionado.producto!.id_producto)) {
+                  detallesSeleccionados.add(detalleAutomatico);
+
+                  if (descripcionCtrl.text.isEmpty) {
+                    descripcionCtrl.text = tipoSeleccionado.descripcion ?? '';
+                  }
+                }
+              }
+            });
+          }
         },
         validator: (value) =>
         value == null ? 'Seleccione un tipo de mantenimiento' : null,
