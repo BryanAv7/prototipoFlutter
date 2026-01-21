@@ -837,6 +837,21 @@ class _AgregarMantenimientoPageState extends State<AgregarMantenimientoPage> {
                 if (!detallesSeleccionados.any((d) => d.idProducto == tipoSeleccionado.producto!.id_producto)) {
                   detallesSeleccionados.add(detalleAutomatico);
 
+                  // Agregar concepto manual si existe
+                  if (tipoSeleccionado.conceptoManual != null && tipoSeleccionado.conceptoManual!.isNotEmpty) {
+                    final conceptoManual = DetalleUI(
+                      idProducto: -1,
+                      nombre: tipoSeleccionado.conceptoManual!,
+                      cantidad: tipoSeleccionado.conceptoCantidad ?? 1,
+                      precioUnitario: tipoSeleccionado.conceptoPrecioUnitario ?? 0,
+                      esProducto: false,
+                    );
+
+                    if (!detallesSeleccionados.any((d) => d.nombre == tipoSeleccionado.conceptoManual!)) {
+                      detallesSeleccionados.add(conceptoManual);
+                    }
+                  }
+
                   if (descripcionCtrl.text.isEmpty) {
                     descripcionCtrl.text = tipoSeleccionado.descripcion ?? '';
                   }

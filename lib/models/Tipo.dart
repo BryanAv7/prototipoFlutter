@@ -6,6 +6,9 @@ class Tipo {
   final String? descripcion;
   final double? costo_servicio;
   final Producto? producto;
+  final String? conceptoManual;
+  final int? conceptoCantidad;
+  final double? conceptoPrecioUnitario;
 
   Tipo({
     required this.idTipo,
@@ -13,6 +16,9 @@ class Tipo {
     this.descripcion,
     this.costo_servicio,
     this.producto,
+    this.conceptoManual,
+    this.conceptoCantidad,
+    this.conceptoPrecioUnitario,
   });
 
   factory Tipo.fromJson(Map<String, dynamic> json) {
@@ -26,6 +32,11 @@ class Tipo {
       producto: json['producto'] != null
           ? Producto.fromJson(json['producto'])
           : null,
+      conceptoManual: json['concepto_manual'],
+      conceptoCantidad: json['concepto_cantidad'],
+      conceptoPrecioUnitario: json['concepto_precio_unitario'] != null
+          ? double.parse(json['concepto_precio_unitario'].toString())
+          : null,
     );
   }
 
@@ -36,6 +47,9 @@ class Tipo {
       'descripcion': descripcion,
       'costo_servicio': costo_servicio,
       'producto': producto?.toJson(),
+      'concepto_manual': conceptoManual,
+      'concepto_cantidad': conceptoCantidad,
+      'concepto_precio_unitario': conceptoPrecioUnitario,
     };
   }
 }
