@@ -5,6 +5,7 @@ import 'HomeScreen.dart';
 import 'RegisterScreen.dart';
 import 'HomeUserScreen.dart';
 import '../screens/forgot_password_screen.dart';
+import '../services/server_discovery_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,28 +20,87 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _loading = false;
   bool _obscurePassword = true;
+  bool _discoveringServer = false; // 1️⃣ Flag para discovery
   Widget? _correoSuffix;
 
   String? _savedIp;
+
+  final ServerDiscoveryService _discoveryService = ServerDiscoveryService(); // 1️⃣ Instancia del servicio
 
   @override
   void initState() {
     super.initState();
     _correoSuffix = const Icon(Icons.close, color: Colors.red);
     correoController.addListener(_validarCorreo);
-    _loadSavedIp();
+    _initializeApp(); // 2️⃣ Inicialización con discovery automático
   }
 
   @override
   void dispose() {
     correoController.removeListener(_validarCorreo);
+    _discoveryService.stopDiscovery(); // Limpiar discovery al salir
     super.dispose();
+  }
+
+  // 2️⃣ Discovery automático al iniciar
+  Future<void> _initializeApp() async {
+    await _loadSavedIp();
+
+    // Si no hay IP guardada, iniciar descubrimiento automático
+    if (_savedIp == null || _savedIp!.isEmpty) {
+      _startAutoDiscovery();
+    }
   }
 
   Future<void> _loadSavedIp() async {
     final prefs = await ApiConfig.getSavedServerIp();
-    setState(() {
-      _savedIp = prefs;
+    if (mounted) {
+      setState(() {
+        _savedIp = prefs;
+      });
+    }
+  }
+
+  // 2️⃣ Método para iniciar discovery automático
+  void _startAutoDiscovery() {
+    if (_discoveringServer) return;
+
+    setState(() => _discoveringServer = true);
+
+    _discoveryService.startDiscovery(
+      onServerFound: (ip, port) async {
+        final ipPuerto = '$ip:$port';
+        await ApiConfig.setServerIp(ipPuerto);
+        await _loadSavedIp(); // 6️⃣ Refrescar estado después de guardar
+
+        if (mounted) {
+          setState(() => _discoveringServer = false);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Servidor encontrado: $ipPuerto'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      },
+    );
+
+    // Timeout de 10 segundos
+    Future.delayed(const Duration(seconds: 10), () {
+      if (_discoveringServer) {
+        _discoveryService.stopDiscovery();
+        if (mounted) {
+          setState(() => _discoveringServer = false);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se encontró servidor. Configúralo manualmente.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
     });
   }
 
@@ -55,6 +115,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
+    // 4️⃣ Protección: no permitir login durante discovery
+    if (_discoveringServer) return;
+
     final correo = correoController.text.trim();
     final contrasena = contrasenaController.text.trim();
 
@@ -108,63 +171,48 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _redirigirSegunRol(dynamic idUsuario) async {
     try {
-      // Convertir a int si es necesario
       final userId = idUsuario is int ? idUsuario : int.parse(idUsuario.toString());
-
-      //print('[LOGIN] Obteniendo roles para usuario ID: $userId');
 
       final roles = await AuthService.obtenerRolesUsuario(userId);
 
       if (!mounted) return;
 
       if (roles != null && roles.isNotEmpty) {
-        // El primer rol es el principal
         final rolPrincipal = roles[0] as Map<String, dynamic>;
         final idRol = rolPrincipal['idRol'] as int?;
 
-        //print('[LOGIN] ID Rol: $idRol');
-
-        // Redirigir según el rol
         if (idRol == 2) {
           // CLIENTE
-          //print('[LOGIN] Redirigiendo a HomeUserScreen (CLIENTE)');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HomeUserScreen()),
           );
         } else if (idRol == 3) {
           // MECANICO
-          //print('[LOGIN] Redirigiendo a HomeScreen (MECANICO)');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         } else if (idRol == 1) {
           // ADMIN
-          print('[LOGIN] Redirigiendo a HomeScreen (ADMIN)');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HomeUserScreen()),
           );
         } else {
           // Rol desconocido
-          //print('[LOGIN] Rol desconocido: $idRol, se direcciona a HomeScreen por defecto');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         }
       } else {
-        // Si no hay roles, ir a HomeScreen por defecto
-        //print('[LOGIN] Sin roles, yendo a HomeScreen por defecto');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       }
     } catch (e) {
-      //print('[LOGIN] Error obteniendo roles: $e');
-      // En caso de error, ir a HomeScreen
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -174,6 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // 3️⃣ Diálogo con discovery manual y guardado manual
   void _showIpDialog() {
     final ipPuerto = _savedIp?.split(':') ?? ['', ''];
     final ipController = TextEditingController(text: ipPuerto[0]);
@@ -241,6 +290,8 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancelar", style: TextStyle(color: Colors.red)),
           ),
+
+          // 3️⃣ Botón Guardar Manual
           TextButton(
             onPressed: () async {
               final ip = ipController.text.trim();
@@ -249,9 +300,16 @@ class _LoginScreenState extends State<LoginScreen> {
               if (ip.isNotEmpty && puerto.isNotEmpty) {
                 final ipPuertoCompleta = '$ip:$puerto';
                 await ApiConfig.setServerIp(ipPuertoCompleta);
-                setState(() => _savedIp = ipPuertoCompleta);
+                await _loadSavedIp(); // 6️⃣ Refrescar estado
+
                 if (mounted) {
                   Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Servidor guardado manualmente'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
                 }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -262,7 +320,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               }
             },
-            child: const Text("Guardar", style: TextStyle(color: Colors.green)),
+            child: const Text("Guardar manual", style: TextStyle(color: Colors.green)),
+          ),
+
+          // 3️⃣ Botón Buscar Automáticamente
+          TextButton(
+            onPressed: _discoveringServer
+                ? null
+                : () {
+              Navigator.pop(context);
+              _startAutoDiscovery();
+            },
+            child: Text(
+              "Buscar automáticamente",
+              style: TextStyle(
+                color: _discoveringServer ? Colors.grey : Colors.yellow,
+              ),
+            ),
           ),
         ],
       ),
@@ -299,6 +373,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       children: [
                         const Spacer(),
+
+                        // 5️⃣ Indicador visual "Buscando servidor..."
+                        if (_discoveringServer) ...[
+                          const CircularProgressIndicator(color: Colors.yellow),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Buscando servidor en la red local...',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                        ],
 
                         Center(
                           child: Container(
@@ -352,9 +438,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // CAMPO CORREO
+                        // CAMPO CORREO - 4️⃣ Deshabilitado durante discovery
                         TextField(
                           controller: correoController,
+                          enabled: !_discoveringServer,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             hintText: 'Correo',
@@ -369,15 +456,20 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Colors.yellow),
                             ),
+                            disabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[700]!),
+                            ),
                             suffixIcon: _correoSuffix,
                           ),
                         ),
 
                         const SizedBox(height: 15),
 
-                        // CAMPO CONTRASEÑA
+                        // CAMPO CONTRASEÑA - 4️⃣ Deshabilitado durante discovery
                         TextField(
                           controller: contrasenaController,
+                          enabled: !_discoveringServer,
                           obscureText: _obscurePassword,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
@@ -393,6 +485,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Colors.yellow),
                             ),
+                            disabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[700]!),
+                            ),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
@@ -400,7 +496,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     : Icons.visibility,
                                 color: Colors.grey[400],
                               ),
-                              onPressed: () {
+                              onPressed: _discoveringServer ? null : () {
                                 setState(() {
                                   _obscurePassword = !_obscurePassword;
                                 });
@@ -414,7 +510,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {
+                            onPressed: _discoveringServer ? null : () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -428,11 +524,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 15),
 
-                        // BOTÓN LOGIN
+                        // 4️⃣ BOTÓN LOGIN - Deshabilitado durante discovery
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: _loading ? null : _login,
+                            onPressed: (_loading || _discoveringServer) ? null : _login,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.yellow[700],
                               padding: const EdgeInsets.symmetric(vertical: 15),
@@ -458,7 +554,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: _discoveringServer ? null : () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -493,7 +589,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: () {},
+                            onPressed: _discoveringServer ? null : () {},
                             icon: Image.asset(
                               'assets/images/logoGoogle.png',
                               height: 24,
