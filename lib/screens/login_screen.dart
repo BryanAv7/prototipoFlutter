@@ -197,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // ADMIN
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomeUserScreen()),
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         } else {
           // Rol desconocido
