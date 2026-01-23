@@ -50,7 +50,9 @@ class RegistrosService {
         final List data = json.decode(response.body);
         return data.map((e) => RegistroDTO.fromJson(e)).toList();
       } else {
-        throw Exception("Error al cargar registros: ${response.statusCode} ${response.reasonPhrase}");
+        throw Exception(
+          "Error al cargar registros: ${response.statusCode} ${response.reasonPhrase}",
+        );
       }
     } catch (e) {
       print('Error en listarRegistros: $e');
@@ -85,7 +87,9 @@ class RegistrosService {
       if (response.statusCode == 200) {
         return RegistroDetalleDTO.fromJson(json.decode(response.body));
       } else {
-        throw Exception("Error al cargar detalle del registro $idRegistro: ${response.statusCode} ${response.reasonPhrase}");
+        throw Exception(
+          "Error al cargar detalle del registro $idRegistro: ${response.statusCode} ${response.reasonPhrase}",
+        );
       }
     } catch (e) {
       print('Error en obtenerDetalle: $e');
@@ -125,7 +129,9 @@ class RegistrosService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return Mantenimiento.fromJson(jsonDecode(response.body));
       } else {
-        throw Exception('Error al crear mantenimiento: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Error al crear mantenimiento: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       print('Error en RegistrosService.crear: $e');
@@ -137,7 +143,9 @@ class RegistrosService {
   // OBTENER HISTORIAL DE MANTENIMIENTOS POR USUARIO
   // (GET /api/registros/historial/{idCliente})
   // =====================================================
-  static Future<List<RegistroDetalleDTO>> obtenerHistorialMantenimientos(int idCliente) async {
+  static Future<List<RegistroDetalleDTO>> obtenerHistorialMantenimientos(
+    int idCliente,
+  ) async {
     try {
       final uri = await _buildUrl('/historial/$idCliente');
 
@@ -161,7 +169,9 @@ class RegistrosService {
         final List data = json.decode(response.body);
         return data.map((e) => RegistroDetalleDTO.fromJson(e)).toList();
       } else {
-        throw Exception("Error al cargar historial: ${response.statusCode} ${response.reasonPhrase}");
+        throw Exception(
+          "Error al cargar historial: ${response.statusCode} ${response.reasonPhrase}",
+        );
       }
     } catch (e) {
       print('Error en obtenerHistorialMantenimientos: $e');
@@ -170,7 +180,9 @@ class RegistrosService {
   }
 
   // OBTENER DETALLES DE FACTURA
-  static Future<List<DetalleFacturaDTO>> obtenerDetallesFactura(int idFactura) async {
+  static Future<List<DetalleFacturaDTO>> obtenerDetallesFactura(
+    int idFactura,
+  ) async {
     try {
       final uri = await _buildUrl('/$idFactura/detalles-factura');
 
@@ -194,7 +206,9 @@ class RegistrosService {
         final List data = json.decode(response.body);
         return data.map((e) => DetalleFacturaDTO.fromJson(e)).toList();
       } else {
-        throw Exception("Error al cargar detalles de factura: ${response.statusCode} ${response.reasonPhrase}");
+        throw Exception(
+          "Error al cargar detalles de factura: ${response.statusCode} ${response.reasonPhrase}",
+        );
       }
     } catch (e) {
       print('Error en obtenerDetallesFactura: $e');
@@ -203,12 +217,63 @@ class RegistrosService {
   }
 
   // =====================================================
+  // ACTUALIZAR ESTADO (PATCH /api/registros/{id}/estado)
+  // =====================================================
+  static Future<Map<String, dynamic>?> actualizarEstado(
+    int idRegistro,
+    int nuevoEstado,
+  ) async {
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+
+      if (baseUrl.isEmpty) {
+        throw Exception("IP del servidor no configurada");
+      }
+
+      final url = Uri.parse(
+        '$baseUrl/registros/$idRegistro/estado?estado=$nuevoEstado',
+      );
+
+      final token = await TokenManager.getToken();
+      if (token == null) {
+        print('No hay token disponible');
+        return null;
+      }
+
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print(
+        "[RegistrosService] ACTUALIZAR ESTADO $idRegistro → ${response.statusCode}",
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        final error = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': error['error'] ?? 'Error desconocido',
+        };
+      }
+    } catch (e) {
+      print('Error en actualizarEstado: $e');
+      return {'success': false, 'error': 'Error de conexión: $e'};
+    }
+  }
+
+  // =====================================================
   // ACTUALIZAR FACTURA (PUT /api/registros/{idRegistro}/factura)
   // =====================================================
   static Future<Map<String, dynamic>?> actualizarFactura(
-      int idRegistro,
-      List<Map<String, dynamic>> detalles,
-      ) async {
+    int idRegistro,
+    List<Map<String, dynamic>> detalles,
+  ) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
 
@@ -233,12 +298,16 @@ class RegistrosService {
         body: jsonEncode(detalles),
       );
 
-      print("[RegistrosService] ACTUALIZAR FACTURA $idRegistro → ${response.statusCode}");
+      print(
+        "[RegistrosService] ACTUALIZAR FACTURA $idRegistro → ${response.statusCode}",
+      );
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Error al actualizar factura: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Error al actualizar factura: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       print('Error en actualizarFactura: $e');
@@ -247,9 +316,13 @@ class RegistrosService {
   }
 
   // ================= BUSCAR POR NOMBRE DE CLIENTE =================
-  static Future<List<RegistroDetalleDTO>> buscarHistorialPorNombre(String nombreCliente) async {
+  static Future<List<RegistroDetalleDTO>> buscarHistorialPorNombre(
+    String nombreCliente,
+  ) async {
     try {
-      final uri = await _buildUrl('/buscar/nombre?nombreCliente=$nombreCliente');
+      final uri = await _buildUrl(
+        '/buscar/nombre?nombreCliente=$nombreCliente',
+      );
 
       final token = await TokenManager.getToken();
       if (token == null) {
@@ -265,13 +338,17 @@ class RegistrosService {
         },
       );
 
-      print("[RegistrosService] BUSCAR NOMBRE '$nombreCliente' → ${response.statusCode}");
+      print(
+        "[RegistrosService] BUSCAR NOMBRE '$nombreCliente' → ${response.statusCode}",
+      );
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         return data.map((e) => RegistroDetalleDTO.fromJson(e)).toList();
       } else {
-        throw Exception("Error al buscar: ${response.statusCode} ${response.reasonPhrase}");
+        throw Exception(
+          "Error al buscar: ${response.statusCode} ${response.reasonPhrase}",
+        );
       }
     } catch (e) {
       print('Error en buscarHistorialPorNombre: $e');
@@ -280,7 +357,9 @@ class RegistrosService {
   }
 
   // ================= BUSCAR HISTORIAL POR PLACA (CON OCR) =================
-  static Future<List<RegistroDetalleDTO>> buscarHistorialPorPlacaOCR(Uint8List imageBytes) async {
+  static Future<List<RegistroDetalleDTO>> buscarHistorialPorPlacaOCR(
+    Uint8List imageBytes,
+  ) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
       final uri = Uri.parse('$baseUrl/registros/ocr/historial');
@@ -314,7 +393,9 @@ class RegistrosService {
 
         if (data['success'] == true && data['historial'] != null) {
           final List historialData = data['historial'];
-          return historialData.map((e) => RegistroDetalleDTO.fromJson(e)).toList();
+          return historialData
+              .map((e) => RegistroDetalleDTO.fromJson(e))
+              .toList();
         } else {
           throw Exception(data['mensaje'] ?? "Error desconocido");
         }

@@ -660,16 +660,16 @@ class _HistorialMisMantenimientosPageState
     IconData iconoEstado = Icons.schedule;
 
     if (estado == 1) {
-      textoEstado = 'Completado';
-      colorEstado = Colors.green;
-      iconoEstado = Icons.check_circle;
-    } else if (estado == 0) {
       textoEstado = 'Pendiente';
+      colorEstado = Colors.blue;
+      iconoEstado = Icons.check_circle;
+    } else if (estado == 3) {
+      textoEstado = 'Reservado';
       colorEstado = Colors.orange;
       iconoEstado = Icons.schedule;
     } else if (estado == 2) {
-      textoEstado = 'Cancelado';
-      colorEstado = Colors.red;
+      textoEstado = 'Finalizado';
+      colorEstado = Colors.green;
       iconoEstado = Icons.cancel;
     }
 

@@ -27,6 +27,7 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
   bool intentoGuardar = false;
   final _formKey = GlobalKey<FormState>();
   int? idTipoSeleccionado;
+  int? estadoSeleccionado; // 🆕 NUEVO: Variable para el estado
   final TextEditingController observacionesCtrl = TextEditingController();
 
   @override
@@ -73,8 +74,10 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
         }
       }
 
+      // 🆕 CARGAR ESTADO ACTUAL
       setState(() {
         idTipoSeleccionado = idTipo;
+        estadoSeleccionado = detalle.estado; // Cargar estado desde backend
       });
 
       if (detalle.idFactura != null) {
@@ -173,6 +176,12 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
                   _buildSectionTitle('Tipo de Servicio', Icons.build),
                   const SizedBox(height: 12),
                   _buildTipoInfo(),
+                  const SizedBox(height: 20),
+
+                  // 🆕 NUEVO BLOQUE: Estado del Mantenimiento
+                  _buildSectionTitle('Estado del Mantenimiento', Icons.flag),
+                  const SizedBox(height: 12),
+                  _buildEstadoSelector(),
                   const SizedBox(height: 20),
 
                   _buildSectionTitle('Productos y Repuestos', Icons.shopping_cart),
@@ -458,6 +467,139 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
     );
   }
 
+  // 🆕 NUEVO WIDGET: Selector de Estado con Chips
+  Widget _buildEstadoSelector() {
+    final bool error = intentoGuardar && estadoSeleccionado == null;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: error
+              ? Colors.red.withOpacity(0.8)
+              : estadoSeleccionado != null
+              ? _getColorEstado(estadoSeleccionado!).withOpacity(0.5)
+              : Colors.white24,
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.white54,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Seleccione el estado del mantenimiento',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildChipEstado(1, 'En Proceso', Colors.blue),
+              _buildChipEstado(2, 'Finalizado', Colors.green),
+              _buildChipEstado(3, 'Reservado', Colors.orange),
+            ],
+          ),
+          if (error) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Debe seleccionar un estado',
+                  style: TextStyle(
+                    color: Colors.red.shade300,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // 🆕 NUEVO WIDGET: Chip individual de estado
+  Widget _buildChipEstado(int valor, String texto, Color color) {
+    final bool seleccionado = estadoSeleccionado == valor;
+
+    return GestureDetector(
+      onTap: () => setState(() => estadoSeleccionado = valor),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: seleccionado ? color : const Color(0xFF2B2B2B),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: seleccionado ? color : Colors.white24,
+            width: 2,
+          ),
+          boxShadow: seleccionado
+              ? [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (seleccionado) ...[
+              Icon(
+                Icons.check_circle,
+                color: Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              texto,
+              style: TextStyle(
+                color: seleccionado ? Colors.white : Colors.white70,
+                fontWeight: seleccionado ? FontWeight.bold : FontWeight.normal,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🆕 NUEVO HELPER: Obtener color según estado
+  Color _getColorEstado(int estado) {
+    switch (estado) {
+      case 1:
+        return Colors.blue; // En Proceso
+      case 2:
+        return Colors.green; // Finalizado
+      case 3:
+        return Colors.orange; // Reservado
+      default:
+        return Colors.white24;
+    }
+  }
+
   Widget _productsBox() {
     final bool hayDetalles = detallesSeleccionados.isNotEmpty;
     final bool error = intentoGuardar && !hayDetalles;
@@ -663,8 +805,14 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
     );
   }
 
+  // 🔄 MODIFICADO: Validación incluye estado
   void _validarAntesDeGuardar() {
     setState(() => intentoGuardar = true);
+
+    if (estadoSeleccionado == null) {
+      _mostrarError("Debe seleccionar un estado");
+      return;
+    }
 
     if (detallesSeleccionados.isEmpty) {
       _mostrarError("Debe seleccionar al menos un producto");
@@ -679,6 +827,7 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
     _actualizarMantenimiento();
   }
 
+  // 🔄 MODIFICADO: Ahora actualiza estado Y factura
   Future<void> _actualizarMantenimiento() async {
     showDialog(
       context: context,
@@ -714,6 +863,23 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
     try {
       setState(() => guardando = true);
 
+      // 1️⃣ PRIMERO: Actualizar el estado
+      print('[DetalleMantenimiento] Actualizando estado a: $estadoSeleccionado');
+
+      final resultadoEstado = await RegistrosService.actualizarEstado(
+        widget.idRegistro,
+        estadoSeleccionado!,
+      );
+
+      if (resultadoEstado == null || resultadoEstado['success'] != true) {
+        throw Exception(
+            resultadoEstado?['error'] ?? 'Error al actualizar estado'
+        );
+      }
+
+      print('[DetalleMantenimiento] Estado actualizado exitosamente');
+
+      // 2️⃣ SEGUNDO: Actualizar la factura con los detalles
       final detallesJSON = detallesSeleccionados
           .map((detalle) => {
         "idProducto": detalle.idProducto,
@@ -723,20 +889,47 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
       })
           .toList();
 
-      final resultado = await RegistrosService.actualizarFactura(
+      print('[DetalleMantenimiento] Actualizando factura con ${detallesJSON.length} productos');
+
+      final resultadoFactura = await RegistrosService.actualizarFactura(
         widget.idRegistro,
         detallesJSON,
       );
 
-      Navigator.pop(context);
+      Navigator.pop(context); // Cerrar loading dialog
 
-      if (resultado != null && resultado['success'] == true) {
+      if (resultadoFactura != null && resultadoFactura['success'] == true) {
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.check_circle, color: Colors.white, size: 24),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Mantenimiento actualizado exitosamente',
+                    style: TextStyle(fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+
+        // Volver a la pantalla anterior
         Navigator.pop(context, true);
       } else {
-        _mostrarError(resultado?['error'] ?? "Error al actualizar");
+        _mostrarError(resultadoFactura?['error'] ?? "Error al actualizar factura");
       }
     } catch (e) {
-      Navigator.pop(context);
+      Navigator.pop(context); // Cerrar loading dialog
+      print('[DetalleMantenimiento] Error: $e');
       _mostrarError("Error: ${e.toString()}");
     } finally {
       setState(() => guardando = false);
