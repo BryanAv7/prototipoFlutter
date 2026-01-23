@@ -82,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   void _onItemTapped(int index) {
-    if (index == 4) {
+    if (index == 3) {
       // Perfil
       Navigator.push(
         context,
@@ -164,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 });
               },
             ),
-
+/*
             // ============== RESERVAS ==============
             _DashboardCard(
               icon: Icons.notifications,
@@ -172,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
               selected: _selectedCardIndex == 2,
               onTap: () => setState(() => _selectedCardIndex = 2),
             ),
-
+*/
             // ============== MANTENIMIENTOS ==============
             _DashboardCard(
               icon: Icons.motorcycle,
@@ -244,8 +244,8 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
+          //BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
         ],
         onTap: _onItemTapped,
       ),

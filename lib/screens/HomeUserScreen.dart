@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:motos_app/screens/AddMotorcycleScreen.dart';
 import 'package:motos_app/screens/ViewProfileScreen.dart';
 import '../services/auth_service.dart';
 import '../utils/token_manager.dart';
@@ -7,6 +8,7 @@ import 'RutasMenuScreen.dart';
 import 'VerMisMantenimientos.dart';
 import '../screens/CrearRutaScreen.dart';
 import '../screens/AppInfoScreen.dart';
+import '../models/usuario.dart';
 
 class HomeUserScreen extends StatefulWidget {
   const HomeUserScreen({super.key});
@@ -64,7 +66,7 @@ class _HomeUserScreenState extends State<HomeUserScreen> {
   ];
 
   void _onItemTapped(int index) {
-    if (index == 4) {
+    if (index == 3) {
       // Perfil
       Navigator.push(
         context,
@@ -117,12 +119,12 @@ class _HomeUserScreenState extends State<HomeUserScreen> {
           crossAxisSpacing: 20,
           mainAxisSpacing: 20,
           children: [
-            _DashboardCard(
+            /*_DashboardCard(
               icon: Icons.event_note,
               label: 'Agendar',
               selected: _selectedCardIndex == 0,
               onTap: () => setState(() => _selectedCardIndex = 0),
-            ),
+            ), */
             _DashboardCard(
               icon: Icons.motorcycle,
               label: 'Mantenimientos',
@@ -135,9 +137,28 @@ class _HomeUserScreenState extends State<HomeUserScreen> {
               },
             ),
             _DashboardCard(
+              icon: Icons.sports_motorsports,
+              label: 'Añadir Motocicleta',
+              selected: _selectedCardIndex == 2,
+              onTap: () async {
+                final userMap = await TokenManager.getUserJson();
+                if (userMap != null) {
+                  // Convertir el Map a objeto Usuario
+                  final usuario = Usuario.fromJson(userMap);
+                  if (!context.mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddMotorcycleScreen(usuario: usuario),
+                    ),
+                  );
+                }
+              },
+            ),
+            _DashboardCard(
               icon: Icons.route,
               label: 'Rutas',
-              selected: _selectedCardIndex == 2,
+              selected: _selectedCardIndex == 3,
               onTap: () {
                 Navigator.push(
                   context,
@@ -158,8 +179,8 @@ class _HomeUserScreenState extends State<HomeUserScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: ''), // ✅ ICONO DE AYUDA
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: ''),
+          //BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
         onTap: _onItemTapped,
