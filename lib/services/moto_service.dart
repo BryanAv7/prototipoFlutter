@@ -13,10 +13,7 @@ class MotoService {
   static Future<bool> crearMoto(Moto moto) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return false;
-      }
+      if (baseUrl.isEmpty) return false;
 
       final url = Uri.parse('$baseUrl/motos');
       final Map<String, dynamic> body = moto.toJson();
@@ -36,7 +33,10 @@ class MotoService {
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       print('Error en crearMoto: $e');
-      return false;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -46,21 +46,15 @@ class MotoService {
   static Future<Moto?> obtenerMotoPorId(int id) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return null;
-      }
+      if (baseUrl.isEmpty) return null;
 
       final url = Uri.parse('$baseUrl/motos/$id');
-
       final token = await TokenManager.getToken();
       if (token == null) return null;
 
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -70,7 +64,10 @@ class MotoService {
       return null;
     } catch (e) {
       print('Error en obtenerMotoPorId: $e');
-      return null;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -80,21 +77,15 @@ class MotoService {
   static Future<List<Moto>> listarMotos() async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return [];
-      }
+      if (baseUrl.isEmpty) return [];
 
       final url = Uri.parse('$baseUrl/motos');
-
       final token = await TokenManager.getToken();
       if (token == null) return [];
 
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -104,7 +95,10 @@ class MotoService {
       return [];
     } catch (e) {
       print('Error en listarMotos: $e');
-      return [];
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -114,21 +108,15 @@ class MotoService {
   static Future<List<Moto>> listarMotosPorUsuario(int idUsuario) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return [];
-      }
+      if (baseUrl.isEmpty) return [];
 
       final url = Uri.parse('$baseUrl/motos/usuario/$idUsuario');
-
       final token = await TokenManager.getToken();
       if (token == null) return [];
 
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -138,7 +126,10 @@ class MotoService {
       return [];
     } catch (e) {
       print('Error en listarMotosPorUsuario: $e');
-      return [];
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -148,27 +139,20 @@ class MotoService {
   static Future<Map<String, dynamic>?> buscarDuenoPorPlaca(File imageFile) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return null;
-      }
+      if (baseUrl.isEmpty) return null;
 
       final url = Uri.parse('$baseUrl/motos/ocr/buscar-dueno');
-
       final request = http.MultipartRequest('POST', url);
       request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));
 
       final token = await TokenManager.getToken();
-      if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
 
       final response = await request.send();
       final respStr = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(respStr);
-
         if (data['success'] == true) {
           return {
             'success': true,
@@ -187,11 +171,18 @@ class MotoService {
             'placa': data['placa'],
           };
         }
+      } else if (response.statusCode == 503) {
+        throw Exception('Servidor OCR apagado. Contacte con un administrador.');
       }
+
       return null;
     } catch (e) {
       print('Error en buscarDuenoPorPlaca: $e');
-      return null;
+      throw Exception(
+          'No se pudo conectar con el servidor OCR. '
+              'El servidor puede estar apagado o no disponible. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -201,17 +192,11 @@ class MotoService {
   static Future<Moto?> actualizarMotoAndGet(Moto motoActualizada) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return null;
-      }
+      if (baseUrl.isEmpty) return null;
 
       final url = Uri.parse('$baseUrl/motos/${motoActualizada.id_moto}');
-
       final token = await TokenManager.getToken();
-      if (token == null) {
-        return null;
-      }
+      if (token == null) return null;
 
       final response = await http.put(
         url,
@@ -226,10 +211,12 @@ class MotoService {
         return Moto.fromJson(jsonDecode(response.body));
       }
       return null;
-
     } catch (e) {
       print('Error en actualizarMotoAndGet: $e');
-      return null;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -239,24 +226,14 @@ class MotoService {
   static Future<String?> detectarPlacaOCR(File image) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return null;
-      }
+      if (baseUrl.isEmpty) return null;
 
       final url = Uri.parse('$baseUrl/motos/ocr/placa');
-
       final request = http.MultipartRequest('POST', url);
-      request.files.add(
-        await http.MultipartFile.fromPath('image', image.path),
-      );
+      request.files.add(await http.MultipartFile.fromPath('image', image.path));
 
       final token = await TokenManager.getToken();
-      if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
-      } else {
-        return null;
-      }
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
 
       final response = await request.send();
       final respStr = await response.stream.bytesToString();
@@ -264,49 +241,44 @@ class MotoService {
       if (response.statusCode == 200) {
         final data = jsonDecode(respStr);
         return data['placa'];
+      } else if (response.statusCode == 503) {
+        throw Exception('Servidor OCR apagado. Contacte con un administrador.');
       }
+
       return null;
     } catch (e) {
       print('Error en detectarPlacaOCR: $e');
-      return null;
+      throw Exception(
+          'No se pudo conectar con el servidor OCR. '
+              'El servidor puede estar apagado o no disponible. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
-// =========================
-// Subir imagen de moto
-// =========================
+  // =========================
+  // Subir imagen de moto
+  // =========================
   static Future<String?> uploadMotoImage(File file) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        throw Exception("IP del servidor no configurada");
-      }
+      if (baseUrl.isEmpty) throw Exception("IP del servidor no configurada");
 
       final url = Uri.parse('$baseUrl/motos/upload');
-
       final request = http.MultipartRequest('POST', url);
       request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
       final token = await TokenManager.getToken();
-      if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
-        // Parsear la respuesta JSON: { "url": "...", "mensaje": "..." }
         final Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
-
-        // Extraer solo la URL
         final String? urlImagen = jsonResponse['url'];
-        if (urlImagen != null && urlImagen.isNotEmpty) {
-          return urlImagen;
-        } else {
-          throw Exception('URL vacía en la respuesta');
-        }
+        if (urlImagen != null && urlImagen.isNotEmpty) return urlImagen;
+        throw Exception('URL vacía en la respuesta');
       } else {
         try {
           final Map<String, dynamic> errorResponse = jsonDecode(responseBody);
@@ -317,7 +289,10 @@ class MotoService {
       }
     } catch (e) {
       print('Error en uploadMotoImage: $e');
-      return null;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 }

@@ -13,17 +13,12 @@ class ProductoService {
   static Future<List<Producto>> listarProductos() async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return [];
-      }
+      if (baseUrl.isEmpty) return [];
 
       final url = Uri.parse('$baseUrl/productos');
 
       final token = await TokenManager.getToken();
-      if (token == null) {
-        return [];
-      }
+      if (token == null) return [];
 
       final response = await http.get(
         url,
@@ -40,7 +35,10 @@ class ProductoService {
       return [];
     } catch (e) {
       print('Error en listarProductos: $e');
-      return [];
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -50,13 +48,9 @@ class ProductoService {
   static Future<Producto?> actualizarProducto(Producto producto) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return null;
-      }
+      if (baseUrl.isEmpty) return null;
 
       final url = Uri.parse('$baseUrl/productos/${producto.idProducto}');
-
       final token = await TokenManager.getToken();
       if (token == null) return null;
 
@@ -75,7 +69,10 @@ class ProductoService {
       return null;
     } catch (e) {
       print('Error al actualizar producto: $e');
-      return null;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -85,29 +82,20 @@ class ProductoService {
   static Future<String?> uploadProductoImage(File file) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        throw Exception("IP del servidor no configurada");
-      }
+      if (baseUrl.isEmpty) throw Exception("IP del servidor no configurada");
 
       final url = Uri.parse('$baseUrl/productos/upload');
-
       final request = http.MultipartRequest('POST', url);
       request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
       final token = await TokenManager.getToken();
-      if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
-        // Parsear la respuesta JSON: { "url": "...", "mensaje": "..." }
         final Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
-
-        // Extraer solo la URL
         final String? urlImagen = jsonResponse['url'];
         if (urlImagen != null && urlImagen.isNotEmpty) {
           return urlImagen;
@@ -124,7 +112,10 @@ class ProductoService {
       }
     } catch (e) {
       print('Error en uploadProductoImage: $e');
-      return null;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 }

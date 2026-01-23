@@ -10,13 +10,9 @@ class UsuarioService {
   static Future<bool> updateUsuario(Usuario usuario) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return false;
-      }
+      if (baseUrl.isEmpty) return false;
 
       final url = Uri.parse('$baseUrl/usuarios/${usuario.idUsuario}');
-
       final Map<String, dynamic> body = {};
       if (usuario.nombreCompleto != null) body['nombre_completo'] = usuario.nombreCompleto;
       if (usuario.nombreUsuario != null) body['nombre_usuario'] = usuario.nombreUsuario;
@@ -40,20 +36,19 @@ class UsuarioService {
       return response.statusCode == 200;
     } catch (e) {
       print('Error en updateUsuario: $e');
-      return false;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
   static Future<Usuario?> updateUsuarioAndGet(Usuario usuario) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        return null;
-      }
+      if (baseUrl.isEmpty) return null;
 
       final url = Uri.parse('$baseUrl/usuarios/${usuario.idUsuario}');
-
       final token = await TokenManager.getToken();
       if (token == null) return null;
 
@@ -75,43 +70,38 @@ class UsuarioService {
       return null;
     } catch (e) {
       print('Error en updateUsuarioAndGet: $e');
-      return null;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
+  // =========================
   // Cargar la imagen
+  // =========================
   static Future<UploadResponse?> uploadImage(File file) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        throw Exception("IP del servidor no configurada");
-      }
+      if (baseUrl.isEmpty) throw Exception("IP del servidor no configurada");
 
       final url = Uri.parse('$baseUrl/usuarios/upload');
-
       final request = http.MultipartRequest('POST', url);
       request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
       final token = await TokenManager.getToken();
-      if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
-        // Parsear la respuesta JSON
         final Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
-
-        // El backend devuelve { "url": "...", "mensaje": "..." }
         return UploadResponse(
           url: jsonResponse['url'] ?? '',
           mensaje: jsonResponse['mensaje'] ?? 'Imagen subida',
         );
       } else {
-        // Intentar extraer el mensaje de error
         try {
           final Map<String, dynamic> errorResponse = jsonDecode(responseBody);
           throw Exception('Error: ${errorResponse['mensaje'] ?? 'Error desconocido'}');
@@ -121,7 +111,10 @@ class UsuarioService {
       }
     } catch (e) {
       print('Error en uploadImage: $e');
-      rethrow;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -131,19 +124,11 @@ class UsuarioService {
   static Future<List<Usuario>> obtenerUsuarios() async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-
-      if (baseUrl.isEmpty) {
-        throw Exception("IP del servidor no configurada");
-      }
+      if (baseUrl.isEmpty) throw Exception("IP del servidor no configurada");
 
       final uri = Uri.parse('$baseUrl/usuarios');
-
-      // OBTENER TOKEN
       final token = await TokenManager.getToken();
-      if (token == null) {
-        print('No hay token disponible');
-        throw Exception("No hay token de autenticación");
-      }
+      if (token == null) throw Exception("No hay token de autenticación");
 
       final response = await http.get(
         uri,
@@ -164,7 +149,10 @@ class UsuarioService {
       }
     } catch (e) {
       print('Error en obtenerUsuarios: $e');
-      rethrow;
+      throw Exception(
+          'No se pudo conectar con el servidor o Supabase está apagado. '
+              'Por favor contacte con un administrador. Detalle: $e'
+      );
     }
   }
 
@@ -184,14 +172,15 @@ class UsuarioService {
     }
   }
 }
-  /// Clase para encapsular la respuesta de upload
-  class UploadResponse {
+
+// Clase para encapsular la respuesta de upload
+class UploadResponse {
   final String url;
   final String mensaje;
 
   UploadResponse({
-  required this.url,
-  required this.mensaje,
+    required this.url,
+    required this.mensaje,
   });
 
   @override
