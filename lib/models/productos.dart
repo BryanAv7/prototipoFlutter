@@ -27,23 +27,41 @@ class Producto {
     this.idCategoria,
   });
 
+  // =========================
+  // Factory para crear Producto desde JSON
+  // =========================
   factory Producto.fromJson(Map<String, dynamic> json) {
+    // Helper para formatear fechas
+    String formatDate(dynamic value) {
+      if (value == null) return '';
+      if (value is String) return value;
+      if (value is List && value.length == 3) {
+        return '${value[0].toString().padLeft(4, '0')}-'
+            '${value[1].toString().padLeft(2, '0')}-'
+            '${value[2].toString().padLeft(2, '0')}';
+      }
+      return value.toString();
+    }
+
     return Producto(
       idProducto: json['id_producto'],
       codigoProveedor: json['codigo_proveedor'],
       codigoPersonal: json['codigo_personal'],
-      nombre: json['nombre'],
-      descripcion: json['descripcion'],
-      rutaImagenProductos: json['ruta_imagenproductos'] ?? '', // ← CAMBIO AQUÍ (sin la 'P' mayúscula)
-      costo: json['costo']?.toDouble(),
-      pvp: json['pvp']?.toDouble(),
-      stock: json['stock'],
-      fechaRegistro: json['fecha_registro'],
-      fechaModificacion: json['fecha_modificacion'],
+      nombre: json['nombre'] ?? '',
+      descripcion: json['descripcion'] ?? '',
+      rutaImagenProductos: json['ruta_imagenproductos'] ?? '',
+      costo: (json['costo'] as num?)?.toDouble() ?? 0.0,
+      pvp: (json['pvp'] as num?)?.toDouble() ?? 0.0,
+      stock: json['stock'] ?? 0,
+      fechaRegistro: formatDate(json['fechaRegistro']),
+      fechaModificacion: formatDate(json['fechaModificacion']),
       idCategoria: json['id_categoria'],
     );
   }
 
+  // =========================
+  // Convertir Producto a JSON
+  // =========================
   Map<String, dynamic> toJson() {
     return {
       'id_producto': idProducto,
