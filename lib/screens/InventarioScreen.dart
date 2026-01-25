@@ -130,13 +130,9 @@ class _InventarioScreenState extends State<InventarioScreen> {
               children: [
                 _buildCategoriaChip('Todas', null),
                 const SizedBox(width: 8),
-                _buildCategoriaChip('Repuestos', 1),
+                _buildCategoriaChip('General', 1),
                 const SizedBox(width: 8),
-                _buildCategoriaChip('Aceites', 2),
-                const SizedBox(width: 8),
-                _buildCategoriaChip('Filtros', 3),
-                const SizedBox(width: 8),
-                _buildCategoriaChip('Accesorios', 4),
+                _buildCategoriaChip('OTROS', 1),///SE DEBERIA DE OBTENER DE "CATEGORIAS"
               ],
             ),
           ),

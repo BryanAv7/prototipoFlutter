@@ -512,7 +512,8 @@ class _DetalleMantenimientoPageState extends State<DetalleMantenimientoPage> {
             children: [
               _buildChipEstado(1, 'En Proceso', Colors.blue),
               _buildChipEstado(2, 'Finalizado', Colors.green),
-              _buildChipEstado(3, 'Reservado', Colors.orange),
+              ///Descomentar si empieza Logica de "Reserva"
+              ///_buildChipEstado(3, 'Reservado', Colors.orange),
             ],
           ),
           if (error) ...[

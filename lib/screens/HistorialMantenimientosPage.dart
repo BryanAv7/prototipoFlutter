@@ -986,17 +986,17 @@ class _HistorialMantenimientosPageState
     IconData iconoEstado = Icons.schedule;
 
     if (estado == 1) {
-      textoEstado = 'Completado';
-      colorEstado = Colors.green;
+      textoEstado = 'En Proceso';
+      colorEstado = Colors.blue;
       iconoEstado = Icons.check_circle;
-    } else if (estado == 0) {
-      textoEstado = 'Pendiente';
-      colorEstado = Colors.orange;
-      iconoEstado = Icons.schedule;
     } else if (estado == 2) {
-      textoEstado = 'Cancelado';
-      colorEstado = Colors.red;
-      iconoEstado = Icons.cancel;
+      textoEstado = 'Finalizado';
+      colorEstado = Colors.green;
+      iconoEstado = Icons.schedule;
+    } else if (estado == 3) {
+      textoEstado = 'Reservado';
+      colorEstado = Colors.orange;
+      iconoEstado = Icons.wallet_travel_sharp;
     }
 
     return Container(
