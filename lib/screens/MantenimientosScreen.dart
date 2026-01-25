@@ -13,6 +13,8 @@ class MantenimientosPage extends StatefulWidget {
 
 class _MantenimientosPageState extends State<MantenimientosPage> {
   late Future<List<RegistroDTO>> registrosFuture;
+  String _filtroSeleccionado = 'todos';
+  List<RegistroDTO> _registrosCache = [];
 
   @override
   void initState() {
@@ -23,7 +25,20 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
   void _recargarLista() {
     setState(() {
       registrosFuture = RegistrosService.listarRegistros();
+      _registrosCache = [];
     });
+  }
+
+  List<RegistroDTO> _aplicarFiltro(List<RegistroDTO> registros) {
+    switch (_filtroSeleccionado) {
+      case 'enProceso':
+        return registros.where((r) => r.estado == 1).toList();
+      case 'finalizados':
+        return registros.where((r) => r.estado != 1).toList();
+      case 'todos':
+      default:
+        return registros;
+    }
   }
 
   @override
@@ -53,138 +68,98 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Header con estadísticas
-          _buildHeaderStats(),
-
-          // Lista de mantenimientos
-          Expanded(
-            child: FutureBuilder<List<RegistroDTO>>(
-              future: registrosFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        CircularProgressIndicator(
-                          color: Color(0xFFFFD700),
-                          strokeWidth: 3,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Cargando mantenimientos...',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.red.shade400,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Error al cargar datos",
-                          style: TextStyle(
-                            color: Colors.red.shade400,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "${snapshot.error}",
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: _recargarLista,
-                          icon: const Icon(Icons.refresh, color: Colors.black),
-                          label: const Text(
-                            'Reintentar',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFD700),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final registros = snapshot.data!;
-
-                if (registros.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inbox_outlined,
-                          size: 80,
-                          color: Colors.white.withOpacity(0.3),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          "No hay mantenimientos registrados",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Presiona el botón + para agregar uno",
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+      body: FutureBuilder<List<RegistroDTO>>(
+        future: registrosFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  CircularProgressIndicator(
+                    color: Color(0xFFFFD700),
+                    strokeWidth: 3,
                   ),
-                  itemCount: registros.length,
-                  itemBuilder: (context, index) {
-                    return _buildCard(context, registros[index], index);
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+                  SizedBox(height: 16),
+                  Text(
+                    'Cargando mantenimientos...',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Error al cargar datos",
+                    style: TextStyle(
+                      color: Colors.red.shade400,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "${snapshot.error}",
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: _recargarLista,
+                    icon: const Icon(Icons.refresh, color: Colors.black),
+                    label: const Text(
+                      'Reintentar',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFD700),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final registros = snapshot.data!;
+          _registrosCache = registros; // Cachear los datos
+
+          return Column(
+            children: [
+              // Header con estadísticas - SIN FutureBuilder
+              _buildHeaderStats(registros),
+
+              // Lista de mantenimientos
+              Expanded(
+                child: _buildListaMantenimientos(registros),
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -212,97 +187,176 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
     );
   }
 
-  Widget _buildHeaderStats() {
-    return FutureBuilder<List<RegistroDTO>>(
-      future: registrosFuture,
-      builder: (context, snapshot) {
-        final registros = snapshot.data ?? [];
-        final enProceso = registros.where((r) => r.estado == 1).length;
-        final finalizados = registros.where((r) => r.estado != 1).length;
+  Widget _buildListaMantenimientos(List<RegistroDTO> registros) {
+    final registrosFiltrados = _aplicarFiltro(registros);
 
-        return Container(
-          margin: const EdgeInsets.all(10),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFFFFD700).withOpacity(0.2),
-                const Color(0xFFFFD700).withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    if (registrosFiltrados.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 80,
+              color: Colors.white.withOpacity(0.3),
             ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFFFD700).withOpacity(0.3),
-              width: 1,
+            const SizedBox(height: 16),
+            Text(
+              _filtroSeleccionado == 'todos'
+                  ? "No hay mantenimientos registrados"
+                  : _filtroSeleccionado == 'enProceso'
+                  ? "No hay mantenimientos en proceso"
+                  : "No hay mantenimientos finalizados",
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(
-                icon: Icons.format_list_bulleted,
-                label: 'Total',
-                value: '${registros.length}',
-                color: const Color(0xFFFFD700),
+            const SizedBox(height: 8),
+            const Text(
+              "Presiona el botón + para agregar uno",
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 14,
               ),
-              Container(
-                height: 40,
-                width: 1,
-                color: Colors.white24,
-              ),
-              _buildStatItem(
-                icon: Icons.pending_actions,
-                label: 'En Proceso',
-                value: '$enProceso',
-                color: Colors.green,
-              ),
-              Container(
-                height: 40,
-                width: 1,
-                color: Colors.white24,
-              ),
-              _buildStatItem(
-                icon: Icons.check_circle,
-                label: 'Finalizados',
-                value: '$finalizados',
-                color: Colors.blue,
-              ),
-            ],
-          ),
-        );
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
+      itemCount: registrosFiltrados.length,
+      itemBuilder: (context, index) {
+        return _buildCard(context, registrosFiltrados[index], index);
       },
     );
   }
 
-  Widget _buildStatItem({
+  Widget _buildHeaderStats(List<RegistroDTO> registros) {
+    final enProceso = registros.where((r) => r.estado == 1).length;
+    final finalizados = registros.where((r) => r.estado != 1).length;
+
+    return Container(
+      margin: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFFFD700).withOpacity(0.2),
+            const Color(0xFFFFD700).withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItemButton(
+            icon: Icons.format_list_bulleted,
+            label: 'Total',
+            value: '${registros.length}',
+            color: const Color(0xFFFFD700),
+            filtroKey: 'todos',
+          ),
+          Container(
+            height: 40,
+            width: 1,
+            color: Colors.white24,
+          ),
+          _buildStatItemButton(
+            icon: Icons.pending_actions,
+            label: 'En Proceso',
+            value: '$enProceso',
+            color: Colors.green,
+            filtroKey: 'enProceso',
+          ),
+          Container(
+            height: 40,
+            width: 1,
+            color: Colors.white24,
+          ),
+          _buildStatItemButton(
+            icon: Icons.check_circle,
+            label: 'Finalizados',
+            value: '$finalizados',
+            color: Colors.blue,
+            filtroKey: 'finalizados',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItemButton({
     required IconData icon,
     required String label,
     required String value,
     required Color color,
+    required String filtroKey,
   }) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 28),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+    final isSelected = _filtroSeleccionado == filtroKey;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _filtroSeleccionado = filtroKey;
+        });
+      },
+      child: Column(
+        children: [
+          // Indicador visual de selección
+          if (isSelected)
+            Container(
+              width: 60,
+              height: 3,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+              margin: const EdgeInsets.only(bottom: 4),
+            )
+          else
+            const SizedBox(height: 7),
+          Icon(
+            icon,
+            color: color,
+            size: 28,
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white54,
-            fontSize: 12,
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              color: isSelected
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.6),
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected
+                  ? Colors.white54
+                  : Colors.white54.withOpacity(0.6),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

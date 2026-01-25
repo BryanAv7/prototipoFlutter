@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:motos_app/screens/VerRutaScreen.dart';
 import 'package:motos_app/screens/ViewProfileScreen.dart';
 import 'package:motos_app/screens/MantenimientosScreen.dart';
 import '../services/auth_service.dart';
@@ -6,7 +7,7 @@ import '../utils/token_manager.dart';
 import 'dart:convert';
 import '../screens/InventarioScreen.dart';
 import '../screens/HistorialMantenimientosPage.dart';
-import '../screens/CrearRutaScreen.dart';
+import '../screens/RutasMenuScreen.dart';
 import '../screens/AppInfoScreen.dart';
 import '../screens/QuickAccountCreationScreen.dart';
 
@@ -92,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Mapa
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const CrearRutaPage()),
+        MaterialPageRoute(builder: (context) => const RutasMenuPage()),
       );
     } else if (index == 2) {
       // INFORMACIÓN
