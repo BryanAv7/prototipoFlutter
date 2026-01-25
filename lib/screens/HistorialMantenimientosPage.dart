@@ -885,7 +885,7 @@ class _HistorialMantenimientosPageState
                           children: [
                             // Descripción del producto/servicio
                             Text(
-                              'Productos:\n${detalle.descripcion}',
+                              'Producto:\n${detalle.descripcion}',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
